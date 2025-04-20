@@ -16,10 +16,12 @@ interface SignUpData extends LoginCredentials {
   role: "admin" | "doctor" | "student";
 }
 
+// Update the interface to include currentUser
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   profile: any | null;
+  currentUser: any | null; // Add currentUser property
   loading: boolean;
   error: string | null;
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -174,6 +176,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     session,
     user,
     profile,
+    currentUser: profile, // Set currentUser to profile for backwards compatibility
     loading,
     error,
     login,
