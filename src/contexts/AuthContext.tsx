@@ -16,12 +16,11 @@ interface SignUpData extends LoginCredentials {
   role: "admin" | "doctor" | "student";
 }
 
-// Update the interface to include currentUser
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   profile: any | null;
-  currentUser: any | null; // Add currentUser property
+  currentUser: any | null; // This property is needed by several components
   loading: boolean;
   error: string | null;
   login: (credentials: LoginCredentials) => Promise<void>;
