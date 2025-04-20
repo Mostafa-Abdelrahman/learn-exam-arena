@@ -5,12 +5,12 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, currentUser } = useAuth();
+  const { isAuthenticated, profile } = useAuth();
 
   useEffect(() => {
     // If user is authenticated, redirect to the appropriate dashboard
-    if (isAuthenticated && currentUser) {
-      switch (currentUser.role) {
+    if (isAuthenticated && profile) {
+      switch (profile.role) {
         case "admin":
           navigate("/admin/dashboard");
           break;
@@ -27,7 +27,7 @@ const Index = () => {
       // If not authenticated, redirect to login
       navigate("/login");
     }
-  }, [isAuthenticated, currentUser, navigate]);
+  }, [isAuthenticated, profile, navigate]);
 
   // Loading state while redirecting
   return (

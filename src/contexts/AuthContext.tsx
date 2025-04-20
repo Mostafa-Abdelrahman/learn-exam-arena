@@ -1,14 +1,29 @@
 
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import AuthService, { LoginCredentials, User } from "../services/auth.service";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Session, User } from "@supabase/supabase-js";
+
+interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+interface SignUpData extends LoginCredentials {
+  name: string;
+  gender: "male" | "female" | "other";
+  role: "admin" | "doctor" | "student";
+}
 
 interface AuthContextType {
-  currentUser: User | null;
+  session: Session | null;
+  user: User | null;
+  profile: any | null;
   loading: boolean;
   error: string | null;
   login: (credentials: LoginCredentials) => Promise<void>;
+  signUp: (data: SignUpData) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -18,7 +33,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   children 
 }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -26,42 +43,103 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is already logged in
-    const user = AuthService.getCurrentUser();
-    if (user) {
-      setCurrentUser(user);
-      setIsAuthenticated(true);
-    }
-    setLoading(false);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setIsAuthenticated(!!session);
+
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          setProfile(profile);
+        } else {
+          setProfile(null);
+        }
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setIsAuthenticated(!!session);
+      if (session?.user) {
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data }) => {
+            setProfile(data);
+            setLoading(false);
+          });
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (credentials: LoginCredentials) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await AuthService.login(credentials);
-      setCurrentUser(response.user);
-      setIsAuthenticated(true);
+      const { error } = await supabase.auth.signInWithPassword(credentials);
       
-      // Redirect based on user role
-      if (response.user.role === "admin") {
-        navigate("/admin/dashboard");
-      } else if (response.user.role === "doctor") {
-        navigate("/doctor/dashboard");
-      } else if (response.user.role === "student") {
-        navigate("/student/dashboard");
-      }
+      if (error) throw error;
       
       toast({
         title: "Login successful",
-        description: `Welcome back, ${response.user.name}!`,
-        variant: "default",
+        description: "Welcome back!",
       });
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to login");
+      setError(err.message);
       toast({
         title: "Login failed",
-        description: err.response?.data?.message || "Invalid credentials",
+        description: err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signUp = async (data: SignUpData) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const { error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            name: data.name,
+            gender: data.gender,
+            role: data.role,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Registration successful",
+        description: "Please check your email to confirm your account.",
+      });
+    } catch (err: any) {
+      setError(err.message);
+      toast({
+        title: "Registration failed",
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -72,20 +150,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const logout = async () => {
     try {
       setLoading(true);
-      await AuthService.logout();
-      setCurrentUser(null);
-      setIsAuthenticated(false);
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
       navigate("/login");
       toast({
         title: "Logged out",
         description: "You have been successfully logged out",
-        variant: "default",
       });
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to logout");
+      setError(err.message);
       toast({
         title: "Logout failed",
-        description: err.response?.data?.message || "Something went wrong",
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -94,10 +171,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const value = {
-    currentUser,
+    session,
+    user,
+    profile,
     loading,
     error,
     login,
+    signUp,
     logout,
     isAuthenticated,
   };
