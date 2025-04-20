@@ -72,7 +72,7 @@ interface Exam {
   name: string;
   course_id: string;
   exam_date: string;
-  duration: string;
+  duration: string | unknown; // Updated to accept unknown
   status: "draft" | "published" | "archived";
   created_by: string;
   course?: {

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +40,12 @@ interface Choice {
   is_correct: boolean;
 }
 
+interface McqChoice {
+  id?: string;
+  text: string;
+  is_correct: boolean;
+}
+
 const DoctorQuestions = () => {
   const { currentUser } = useAuth();
   const { toast } = useToast();
@@ -52,13 +57,12 @@ const DoctorQuestions = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [choices, setChoices] = useState<Choice[]>([]);
 
-  // New question form state
   const [questionText, setQuestionText] = useState("");
   const [questionType, setQuestionType] = useState<"mcq" | "written">("mcq");
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [chapter, setChapter] = useState("");
   const [evaluationCriteria, setEvaluationCriteria] = useState("");
-  const [mcqChoices, setMcqChoices] = useState([
+  const [mcqChoices, setMcqChoices] = useState<McqChoice[]>([
     { text: "", is_correct: true },
     { text: "", is_correct: false },
     { text: "", is_correct: false },
@@ -81,7 +85,6 @@ const DoctorQuestions = () => {
 
       setQuestions(questionsData);
 
-      // Fetch choices for MCQ questions
       if (questionsData.length > 0) {
         const mcqQuestionIds = questionsData
           .filter(q => q.type === "mcq")
@@ -110,7 +113,6 @@ const DoctorQuestions = () => {
 
   const handleAddQuestion = async () => {
     try {
-      // Validate form
       if (!questionText.trim()) {
         toast({
           title: "Validation error",
@@ -142,7 +144,6 @@ const DoctorQuestions = () => {
         }
       }
 
-      // Insert question
       const { data: questionData, error: questionError } = await supabase
         .from("questions")
         .insert({
@@ -158,7 +159,6 @@ const DoctorQuestions = () => {
 
       if (questionError) throw questionError;
 
-      // If MCQ, insert choices
       if (questionType === "mcq" && questionData) {
         const choicesForInsert = mcqChoices.map(choice => ({
           question_id: questionData.id,
@@ -178,7 +178,6 @@ const DoctorQuestions = () => {
         description: "Question added successfully",
       });
 
-      // Reset form and refetch questions
       resetForm();
       setIsAddDialogOpen(false);
       fetchQuestions();
@@ -223,21 +222,18 @@ const DoctorQuestions = () => {
     setChapter(question.chapter || "");
     setEvaluationCriteria(question.evaluation_criteria || "");
 
-    // If MCQ, fetch and set choices
     if (question.type === "mcq") {
       const questionChoices = choices.filter(c => c.question_id === question.id);
       
       if (questionChoices.length > 0) {
-        // Map existing choices to the format expected by the form
-        const formattedChoices = questionChoices.map(c => ({
+        const formattedChoices: McqChoice[] = questionChoices.map(c => ({
           text: c.text,
           is_correct: c.is_correct,
           id: c.id
         }));
         
-        // If fewer than 4 choices, add empty ones
         while (formattedChoices.length < 4) {
-          formattedChoices.push({ text: "", is_correct: false, id: "" });
+          formattedChoices.push({ text: "", is_correct: false });
         }
         
         setMcqChoices(formattedChoices);
@@ -251,7 +247,6 @@ const DoctorQuestions = () => {
     if (!selectedQuestion) return;
 
     try {
-      // Update question
       const { error: questionError } = await supabase
         .from("questions")
         .update({
@@ -264,11 +259,9 @@ const DoctorQuestions = () => {
 
       if (questionError) throw questionError;
 
-      // If MCQ, update choices
       if (questionType === "mcq") {
         for (const choice of mcqChoices) {
           if (choice.id) {
-            // Update existing choice
             const { error: updateError } = await supabase
               .from("choices")
               .update({
@@ -279,7 +272,6 @@ const DoctorQuestions = () => {
 
             if (updateError) throw updateError;
           } else if (choice.text.trim()) {
-            // Insert new choice
             const { error: insertError } = await supabase
               .from("choices")
               .insert({
@@ -325,21 +317,14 @@ const DoctorQuestions = () => {
     setSelectedQuestion(null);
   };
 
-  const filteredQuestions = questions.filter(
-    q => 
-      q.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (q.chapter && q.chapter.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
-
   const handleChoiceChange = (index: number, field: 'text' | 'is_correct', value: string | boolean) => {
     const updatedChoices = [...mcqChoices];
     
     if (field === 'is_correct') {
-      // If marking a choice as correct, set all others to false
       updatedChoices.forEach((choice, i) => {
         updatedChoices[i] = {
           ...choice,
-          is_correct: i === index ? true : false
+          is_correct: i === index
         };
       });
     } else {
@@ -351,6 +336,12 @@ const DoctorQuestions = () => {
     
     setMcqChoices(updatedChoices);
   };
+
+  const filteredQuestions = questions.filter(
+    q => 
+      q.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (q.chapter && q.chapter.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   return (
     <div className="space-y-6 animate-in">
@@ -478,7 +469,6 @@ const DoctorQuestions = () => {
         </div>
       )}
 
-      {/* Add Question Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -602,7 +592,6 @@ const DoctorQuestions = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Question Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
