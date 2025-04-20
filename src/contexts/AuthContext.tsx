@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Session, User } from "@supabase/supabase-js";
+import { Session, User, AuthError } from "@supabase/supabase-js";
 
 interface LoginCredentials {
   email: string;
@@ -50,42 +50,85 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setIsAuthenticated(!!session);
 
         if (session?.user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          setProfile(profile);
+          try {
+            const { data: profile, error } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (error) {
+              console.error('Error fetching user profile:', error);
+              toast({
+                title: "Profile Error",
+                description: "Failed to load user profile",
+                variant: "destructive",
+              });
+            } else {
+              setProfile(profile);
+            }
+          } catch (err) {
+            console.error('Profile fetch error:', err);
+          }
         } else {
           setProfile(null);
         }
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsAuthenticated(!!session);
-      if (session?.user) {
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-          .then(({ data }) => {
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        setIsAuthenticated(!!session);
+        
+        if (session?.user) {
+          const { data, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (profileError) {
+            console.error('Profile initialization error:', profileError);
+            toast({
+              title: "Profile Error",
+              description: "Failed to initialize user profile",
+              variant: "destructive",
+            });
+          } else {
             setProfile(data);
-            setLoading(false);
-          });
-      } else {
+          }
+        }
+      } catch (err) {
+        console.error('Auth initialization error:', err);
+      } finally {
         setLoading(false);
       }
-    });
+    };
 
+    initializeAuth();
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [toast]);
+
+  const handleAuthError = (error: AuthError, action: string) => {
+    console.error(`${action} error:`, error);
+    const errorMessage = error.message === 'Database error saving new user'
+      ? 'Failed to create user profile. Please try again.'
+      : error.message;
+    
+    setError(errorMessage);
+    toast({
+      title: `${action} failed`,
+      description: errorMessage,
+      variant: "destructive",
+    });
+  };
 
   const login = async (credentials: LoginCredentials) => {
     try {
@@ -99,13 +142,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         title: "Login successful",
         description: "Welcome back!",
       });
-    } catch (err: any) {
-      setError(err.message);
-      toast({
-        title: "Login failed",
-        description: err.message,
-        variant: "destructive",
-      });
+    } catch (err) {
+      if (err instanceof Error) {
+        handleAuthError(err as AuthError, "Login");
+      }
     } finally {
       setLoading(false);
     }
@@ -115,6 +155,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       setLoading(true);
       setError(null);
+      
+      console.log('Starting signup process with data:', { 
+        email: data.email,
+        role: data.role,
+        name: data.name,
+        gender: data.gender 
+      });
       
       const { error } = await supabase.auth.signUp({
         email: data.email,
@@ -129,7 +176,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       if (error) {
-        console.error("Signup Error Details:", error);
         throw error;
       }
 
@@ -137,14 +183,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         title: "Registration successful",
         description: "Please check your email to confirm your account.",
       });
-    } catch (err: any) {
-      console.error("Full Signup Error:", err);
-      setError(err.message);
-      toast({
-        title: "Registration failed",
-        description: err.message,
-        variant: "destructive",
-      });
+    } catch (err) {
+      if (err instanceof Error) {
+        handleAuthError(err as AuthError, "Registration");
+      }
     } finally {
       setLoading(false);
     }
@@ -161,13 +203,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         title: "Logged out",
         description: "You have been successfully logged out",
       });
-    } catch (err: any) {
-      setError(err.message);
-      toast({
-        title: "Logout failed",
-        description: err.message,
-        variant: "destructive",
-      });
+    } catch (err) {
+      if (err instanceof Error) {
+        handleAuthError(err as AuthError, "Logout");
+      }
     } finally {
       setLoading(false);
     }
