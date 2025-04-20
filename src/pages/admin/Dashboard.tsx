@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -74,7 +73,7 @@ const AdminDashboard = () => {
     users: { total: 0, admins: 0, doctors: 0, students: 0 },
     courses: { total: 0 },
     majors: { total: 0 },
-    exams: { total: 0, published: a0, draft: 0 },
+    exams: { total: 0, published: 0, draft: 0 },
   };
 
   const data = stats || defaultStats;
