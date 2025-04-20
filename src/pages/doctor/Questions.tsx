@@ -317,7 +317,7 @@ const DoctorQuestions = () => {
     setSelectedQuestion(null);
   };
 
-  const handleChoiceChange = (index: number, field: 'text' | 'is_correct', value: string | boolean) => {
+  const handleChoiceChange = (index: number, field: 'text' | 'is_correct', value: any) => {
     const updatedChoices = [...mcqChoices];
     
     if (field === 'is_correct') {
