@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +19,7 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   profile: any | null;
-  currentUser: any | null; // This property is needed by several components
+  currentUser: any | null;
   loading: boolean;
   error: string | null;
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -44,7 +43,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session);
@@ -65,7 +63,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     );
 
-    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -118,6 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       setLoading(true);
       setError(null);
+      
       const { error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -130,13 +128,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Signup Error Details:", error);
+        throw error;
+      }
 
       toast({
         title: "Registration successful",
         description: "Please check your email to confirm your account.",
       });
     } catch (err: any) {
+      console.error("Full Signup Error:", err);
       setError(err.message);
       toast({
         title: "Registration failed",
@@ -175,7 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     session,
     user,
     profile,
-    currentUser: profile, // Set currentUser to profile for backwards compatibility
+    currentUser: profile,
     loading,
     error,
     login,
