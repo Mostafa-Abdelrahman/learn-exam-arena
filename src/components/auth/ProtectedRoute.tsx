@@ -1,6 +1,7 @@
 
+import { useState, useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import AuthService from "@/services/auth.service";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -11,8 +12,30 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   allowedRoles = [],
 }) => {
-  const { isAuthenticated, currentUser, loading } = useAuth();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const location = useLocation();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const authenticated = await AuthService.isAuthenticated();
+        setIsAuthenticated(authenticated);
+        
+        if (authenticated) {
+          const role = await AuthService.getUserRole();
+          setUserRole(role);
+        }
+      } catch (error) {
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    checkAuth();
+  }, []);
 
   if (loading) {
     // Show loading indicator while checking authentication
@@ -30,17 +53,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   if (
     allowedRoles.length > 0 &&
-    currentUser &&
-    !allowedRoles.includes(currentUser.role)
+    userRole &&
+    !allowedRoles.includes(userRole)
   ) {
     // Redirect based on user role if they don't have access
     let redirectPath = "/login";
     
-    if (currentUser.role === "admin") {
+    if (userRole === "admin") {
       redirectPath = "/admin/dashboard";
-    } else if (currentUser.role === "doctor") {
+    } else if (userRole === "doctor") {
       redirectPath = "/doctor/dashboard";
-    } else if (currentUser.role === "student") {
+    } else if (userRole === "student") {
       redirectPath = "/student/dashboard";
     }
     

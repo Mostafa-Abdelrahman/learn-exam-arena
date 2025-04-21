@@ -1,35 +1,9 @@
 
-import axios from "axios";
+import { supabase } from "@/integrations/supabase/client";
 
-// Set your Laravel backend base URL here
-const API_URL = "http://localhost:8000/api";
-
-// Create an axios instance with default config
-const authAPI = axios.create({
-  baseURL: API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-  withCredentials: true, // This is important for Laravel Sanctum to work properly
-});
-
-// Add interceptor to add token to requests
-authAPI.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// User types
+// User types that match with Supabase
 export interface User {
-  user_id: number;
+  id: string;
   name: string;
   email: string;
   role: "admin" | "doctor" | "student";
@@ -41,52 +15,82 @@ export interface LoginCredentials {
   password: string;
 }
 
+export interface RegisterData extends LoginCredentials {
+  name: string;
+  gender: "male" | "female" | "other";
+  role: "admin" | "doctor" | "student";
+}
+
 const AuthService = {
-  // Login and get token
+  // Login using Supabase
   async login(credentials: LoginCredentials) {
-    try {
-      const response = await authAPI.post("/login", credentials);
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("user", JSON.stringify(response.data.user));
-      }
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const { data, error } = await supabase.auth.signInWithPassword(credentials);
+    
+    if (error) throw error;
+    
+    return data;
   },
 
-  // Logout and remove token
-  logout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    return authAPI.post("/logout");
+  // Logout using Supabase
+  async logout() {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    return true;
   },
 
-  // Get current user
-  getCurrentUser(): User | null {
-    const userJson = localStorage.getItem("user");
-    if (userJson) {
-      return JSON.parse(userJson);
-    }
-    return null;
+  // Register using Supabase
+  async register(userData: RegisterData) {
+    const { data, error } = await supabase.auth.signUp({
+      email: userData.email,
+      password: userData.password,
+      options: {
+        data: {
+          name: userData.name,
+          gender: userData.gender,
+          role: userData.role,
+        },
+      },
+    });
+    
+    if (error) throw error;
+    
+    return data;
   },
 
-  // Check if user is authenticated
-  isAuthenticated(): boolean {
-    return !!localStorage.getItem("token");
+  // Get current user from Supabase
+  async getCurrentUser(): Promise<User | null> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+    
+    // Get the user profile from profiles table
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', session.user.id)
+      .single();
+    
+    if (error || !data) return null;
+    
+    return {
+      id: data.id,
+      name: data.name,
+      email: session.user.email || '',
+      role: data.role,
+      gender: data.gender
+    };
   },
 
-  // Get user role
-  getUserRole(): string | null {
-    const user = this.getCurrentUser();
+  // Check if user is authenticated with Supabase
+  async isAuthenticated(): Promise<boolean> {
+    const { data: { session } } = await supabase.auth.getSession();
+    return !!session;
+  },
+
+  // Get user role from Supabase
+  async getUserRole(): Promise<string | null> {
+    const user = await this.getCurrentUser();
     return user ? user.role : null;
-  },
-
-  // Register user (for testing purposes)
-  register(userData: any) {
-    return authAPI.post("/register", userData);
-  },
+  }
 };
 
 export default AuthService;
