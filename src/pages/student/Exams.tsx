@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,7 +35,7 @@ interface Exam {
   name: string;
   course_id: string;
   exam_date: string;
-  duration: string; // Changed from unknown to string
+  duration: string;
   status: "draft" | "published" | "archived";
   course: {
     name: string;
@@ -109,23 +108,29 @@ const StudentExams = () => {
         // Get unique exam IDs from student answers
         const attemptedExamIds = [...new Set(studentExams.map(sa => sa.exam_id))];
         
-        // Categorize exams
+        // Categorize exams - make sure to convert duration to string
         const now = new Date();
         const upcoming: Exam[] = [];
         const available: Exam[] = [];
         const completed: Exam[] = [];
         
         examsData.forEach(exam => {
-          const examDate = new Date(exam.exam_date);
-          const hasAttempted = attemptedExamIds.includes(exam.id);
+          // Convert duration to string
+          const processedExam = {
+            ...exam,
+            duration: String(exam.duration)
+          };
+          
+          const examDate = new Date(processedExam.exam_date);
+          const hasAttempted = attemptedExamIds.includes(processedExam.id);
           
           if (hasAttempted) {
-            completed.push(exam);
+            completed.push(processedExam);
           } else if (isAfter(examDate, now)) {
-            upcoming.push(exam);
+            upcoming.push(processedExam);
           } else {
             // Exam date has passed but not attempted - may still be available
-            available.push(exam);
+            available.push(processedExam);
           }
         });
         

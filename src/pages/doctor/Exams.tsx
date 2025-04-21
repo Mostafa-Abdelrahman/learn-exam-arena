@@ -72,7 +72,7 @@ interface Exam {
   name: string;
   course_id: string;
   exam_date: string;
-  duration: string; // Changed from unknown to string
+  duration: string;
   status: "draft" | "published" | "archived";
   created_by: string;
   course?: {
@@ -162,7 +162,14 @@ const DoctorExams = () => {
           .eq("created_by", currentUser.id);
         
         if (examsError) throw examsError;
-        setExams(examsData);
+        
+        // Make sure duration is properly converted to string
+        const processedExams = examsData.map(exam => ({
+          ...exam,
+          duration: String(exam.duration)
+        }));
+        
+        setExams(processedExams);
       }
       
       // Fetch questions created by this doctor
