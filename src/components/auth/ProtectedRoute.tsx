@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import AuthService from "@/services/auth.service";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -20,14 +20,28 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const authenticated = await AuthService.isAuthenticated();
+        // Get current session
+        const { data: { session } } = await supabase.auth.getSession();
+        const authenticated = !!session;
         setIsAuthenticated(authenticated);
         
-        if (authenticated) {
-          const role = await AuthService.getUserRole();
-          setUserRole(role);
+        if (authenticated && session?.user) {
+          // Get user role from profiles table
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (error) {
+            console.error("Error fetching user role:", error);
+            setIsAuthenticated(false);
+          } else {
+            setUserRole(data.role);
+          }
         }
       } catch (error) {
+        console.error("Auth check error:", error);
         setIsAuthenticated(false);
       } finally {
         setLoading(false);
@@ -35,6 +49,37 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     };
     
     checkAuth();
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        const authenticated = !!session;
+        setIsAuthenticated(authenticated);
+        
+        if (authenticated && session?.user) {
+          // Get user role from profiles table
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (error) {
+            console.error("Error fetching user role:", error);
+            setIsAuthenticated(false);
+          } else {
+            setUserRole(data.role);
+          }
+        } else {
+          setUserRole(null);
+        }
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (loading) {

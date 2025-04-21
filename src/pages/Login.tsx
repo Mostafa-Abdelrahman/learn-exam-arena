@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import AuthService from "@/services/auth.service";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,15 +36,33 @@ const Login = () => {
     setLoading(true);
     
     try {
-      await AuthService.login({ email, password });
+      const { error: signInError, data } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (signInError) throw signInError;
       
       toast({
         title: "Login successful",
         description: "Welcome back!",
       });
       
+      // Fetch user profile to get role
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+      
+      if (profileError) {
+        console.error("Error fetching user profile:", profileError);
+        navigate("/");
+        return;
+      }
+      
       // Redirect based on user role
-      const userRole = await AuthService.getUserRole();
+      const userRole = profileData.role;
       if (userRole === "admin") {
         navigate("/admin/dashboard");
       } else if (userRole === "doctor") {
@@ -72,13 +90,19 @@ const Login = () => {
     setLoading(true);
     
     try {
-      await AuthService.register({
+      const { error: signUpError } = await supabase.auth.signUp({
         email: regEmail,
         password: regPassword,
-        name,
-        role,
-        gender,
+        options: {
+          data: {
+            name,
+            gender,
+            role,
+          },
+        },
       });
+      
+      if (signUpError) throw signUpError;
       
       toast({
         title: "Registration successful",
@@ -88,6 +112,7 @@ const Login = () => {
       // Switch to login tab
       setIsLogin(true);
     } catch (err: any) {
+      console.error("Registration error:", err);
       setError(err.message || "Failed to register. Please try again.");
       toast({
         title: "Registration failed",
