@@ -1,6 +1,7 @@
 
+import { useState, useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -11,8 +12,75 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   allowedRoles = [],
 }) => {
-  const { isAuthenticated, currentUser, loading } = useAuth();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const location = useLocation();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        // Get current session
+        const { data: { session } } = await supabase.auth.getSession();
+        const authenticated = !!session;
+        setIsAuthenticated(authenticated);
+        
+        if (authenticated && session?.user) {
+          // Get user role from profiles table
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (error) {
+            console.error("Error fetching user role:", error);
+            setIsAuthenticated(false);
+          } else {
+            setUserRole(data.role);
+          }
+        }
+      } catch (error) {
+        console.error("Auth check error:", error);
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    checkAuth();
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        const authenticated = !!session;
+        setIsAuthenticated(authenticated);
+        
+        if (authenticated && session?.user) {
+          // Get user role from profiles table
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (error) {
+            console.error("Error fetching user role:", error);
+            setIsAuthenticated(false);
+          } else {
+            setUserRole(data.role);
+          }
+        } else {
+          setUserRole(null);
+        }
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   if (loading) {
     // Show loading indicator while checking authentication
@@ -30,17 +98,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   if (
     allowedRoles.length > 0 &&
-    currentUser &&
-    !allowedRoles.includes(currentUser.role)
+    userRole &&
+    !allowedRoles.includes(userRole)
   ) {
     // Redirect based on user role if they don't have access
     let redirectPath = "/login";
     
-    if (currentUser.role === "admin") {
+    if (userRole === "admin") {
       redirectPath = "/admin/dashboard";
-    } else if (currentUser.role === "doctor") {
+    } else if (userRole === "doctor") {
       redirectPath = "/doctor/dashboard";
-    } else if (currentUser.role === "student") {
+    } else if (userRole === "student") {
       redirectPath = "/student/dashboard";
     }
     

@@ -1,6 +1,6 @@
-
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,10 +10,14 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const { login, signUp, loading, error } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
   
   // Login form state
   const [email, setEmail] = useState("");
@@ -28,18 +32,96 @@ const Login = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login({ email, password });
+    setError(null);
+    setLoading(true);
+    
+    try {
+      const { error: signInError, data } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (signInError) throw signInError;
+      
+      toast({
+        title: "Login successful",
+        description: "Welcome back!",
+      });
+      
+      // Fetch user profile to get role
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+      
+      if (profileError) {
+        console.error("Error fetching user profile:", profileError);
+        navigate("/");
+        return;
+      }
+      
+      // Redirect based on user role
+      const userRole = profileData.role;
+      if (userRole === "admin") {
+        navigate("/admin/dashboard");
+      } else if (userRole === "doctor") {
+        navigate("/doctor/dashboard");
+      } else if (userRole === "student") {
+        navigate("/student/dashboard");
+      } else {
+        navigate("/");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to login. Please check your credentials.");
+      toast({
+        title: "Login failed",
+        description: err.message || "Failed to login. Please check your credentials.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    await signUp({
-      email: regEmail,
-      password: regPassword,
-      name,
-      role,
-      gender,
-    });
+    setError(null);
+    setLoading(true);
+    
+    try {
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: regEmail,
+        password: regPassword,
+        options: {
+          data: {
+            name,
+            gender,
+            role,
+          },
+        },
+      });
+      
+      if (signUpError) throw signUpError;
+      
+      toast({
+        title: "Registration successful",
+        description: "Please check your email to confirm your account or login now.",
+      });
+      
+      // Switch to login tab
+      setIsLogin(true);
+    } catch (err: any) {
+      console.error("Registration error:", err);
+      setError(err.message || "Failed to register. Please try again.");
+      toast({
+        title: "Registration failed",
+        description: err.message || "Failed to register. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
