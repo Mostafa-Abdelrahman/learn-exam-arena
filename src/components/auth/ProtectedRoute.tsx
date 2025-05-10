@@ -27,12 +27,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         
         if (authenticated && session?.user) {
           // Get user role from profiles table
-          // We need to use any type here to avoid TypeScript errors until Supabase types are updated
           const { data, error } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', session.user.id)
-            .single() as any;
+            .single();
           
           if (error) {
             console.error("Error fetching user role:", error);
@@ -59,12 +58,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         
         if (authenticated && session?.user) {
           // Get user role from profiles table
-          // We need to use any type here to avoid TypeScript errors until Supabase types are updated
           const { data, error } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', session.user.id)
-            .single() as any;
+            .single();
           
           if (error) {
             console.error("Error fetching user role:", error);

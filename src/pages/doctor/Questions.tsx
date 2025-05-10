@@ -83,7 +83,8 @@ const DoctorQuestions = () => {
 
       if (error) throw error;
 
-      setQuestions(questionsData);
+      // Type cast to ensure compatibility
+      setQuestions(questionsData as Question[]);
 
       if (questionsData.length > 0) {
         const mcqQuestionIds = questionsData
@@ -97,7 +98,8 @@ const DoctorQuestions = () => {
             .in("question_id", mcqQuestionIds);
 
           if (choicesError) throw choicesError;
-          setChoices(choicesData);
+          // Type cast to ensure compatibility
+          setChoices(choicesData as Choice[]);
         }
       }
     } catch (error: any) {
@@ -166,6 +168,7 @@ const DoctorQuestions = () => {
           is_correct: choice.is_correct,
         }));
 
+        // Use `from("choices")` with proper type casting
         const { error: choicesError } = await supabase
           .from("choices")
           .insert(choicesForInsert);

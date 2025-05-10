@@ -1,5 +1,6 @@
 
 import API from "./api.service";
+import { supabase } from "@/integrations/supabase/client";
 
 const QuestionService = {
   // Get all questions
@@ -61,6 +62,39 @@ const QuestionService = {
   addEvaluationCriteria(questionId: number, criteriaData: any) {
     return API.post(`/questions/${questionId}/evaluation-criteria`, criteriaData);
   },
+
+  // Supabase methods
+  async createQuestionWithSupabase(questionData: Partial<Question>, choices?: McqChoice[]) {
+    try {
+      const { data, error } = await supabase
+        .from('questions')
+        .insert(questionData)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Add choices if this is a multiple choice question
+      if (data && questionData.type === 'mcq' && choices && choices.length > 0) {
+        const formattedChoices = choices.map(choice => ({
+          question_id: data.id,
+          text: choice.text,
+          is_correct: choice.is_correct
+        }));
+        
+        const { error: choicesError } = await supabase
+          .from('choices')
+          .insert(formattedChoices);
+          
+        if (choicesError) throw choicesError;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error creating question:', error);
+      throw error;
+    }
+  }
 };
 
 export default QuestionService;
