@@ -73,10 +73,10 @@ const AuthService = {
     
     return {
       id: data.id,
-      name: data.name,
+      name: data.name || '',
       email: session.user.email || '',
-      role: data.role,
-      gender: data.gender
+      role: data.role as "admin" | "doctor" | "student",
+      gender: data.gender as "male" | "female" | "other"
     };
   },
 

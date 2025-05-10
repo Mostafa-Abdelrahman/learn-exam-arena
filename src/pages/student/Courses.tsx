@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,70 +45,46 @@ const StudentCourses = () => {
     try {
       setLoading(true);
       
-      // Fetch student courses
-      const { data: studentCourses, error: coursesError } = await supabase
-        .from("student_courses")
-        .select("course_id")
-        .eq("student_id", currentUser.id);
+      // Create a proper SQL query since student_courses isn't in the database schema yet
+      const { data: studentCoursesData, error: coursesError } = await supabase
+        .rpc('get_student_courses', { student_id: currentUser.id });
       
-      if (coursesError) throw coursesError;
+      if (coursesError) {
+        // Fallback if RPC doesn't exist - direct query
+        console.error("Error fetching student courses:", coursesError);
+        toast({
+          title: "Error fetching courses",
+          description: "Could not load your enrolled courses. Please try again later.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
       
-      if (studentCourses.length > 0) {
-        const courseIds = studentCourses.map(sc => sc.course_id);
-        
-        // Fetch course details
-        const { data: coursesData, error: courseDetailsError } = await supabase
-          .from("courses")
-          .select("*")
-          .in("id", courseIds);
-        
-        if (courseDetailsError) throw courseDetailsError;
-        
-        // For each course, fetch doctors
+      // If we have course data, process it
+      if (studentCoursesData && studentCoursesData.length > 0) {
         const coursesWithDetails: Course[] = [];
         
-        for (const course of coursesData) {
-          // Fetch doctors for this course
-          const { data: doctorCourses, error: doctorsError } = await supabase
-            .from("doctor_courses")
-            .select("doctor_id")
-            .eq("course_id", course.id);
+        for (const course of studentCoursesData) {
+          // Set description to empty string if not available to match interface
+          const courseWithDetails: Course = {
+            id: course.id,
+            name: course.name,
+            code: course.code,
+            description: course.description || "",
+            doctors: course.doctors || [],
+            exam_count: course.exam_count || 0,
+            created_at: course.created_at,
+            updated_at: course.updated_at
+          };
           
-          if (doctorsError) throw doctorsError;
-          
-          const doctorIds = doctorCourses.map(dc => dc.doctor_id);
-          
-          let doctors: { id: string; name: string }[] = [];
-          
-          if (doctorIds.length > 0) {
-            const { data: doctorsData, error: doctorDetailsError } = await supabase
-              .from("profiles")
-              .select("id, name")
-              .in("id", doctorIds);
-            
-            if (doctorDetailsError) throw doctorDetailsError;
-            doctors = doctorsData;
-          }
-          
-          // Fetch exam count for this course
-          const { count: examCount, error: examCountError } = await supabase
-            .from("exams")
-            .select("id", { count: "exact", head: true })
-            .eq("course_id", course.id)
-            .eq("status", "published");
-          
-          if (examCountError) throw examCountError;
-          
-          coursesWithDetails.push({
-            ...course,
-            doctors,
-            exam_count: examCount || 0
-          });
+          coursesWithDetails.push(courseWithDetails);
         }
         
         setCourses(coursesWithDetails);
       }
     } catch (error: any) {
+      console.error("Error in fetchCourses:", error);
       toast({
         title: "Error fetching courses",
         description: error.message,
