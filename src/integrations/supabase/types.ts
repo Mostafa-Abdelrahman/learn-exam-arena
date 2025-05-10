@@ -9,6 +9,208 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      courses: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      doctor_courses: {
+        Row: {
+          course_id: string
+          created_at: string | null
+          doctor_id: string
+          id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string | null
+          doctor_id: string
+          id?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string | null
+          doctor_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doctor_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_questions: {
+        Row: {
+          created_at: string | null
+          exam_id: string
+          id: string
+          question_id: string
+          weight: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          exam_id: string
+          id?: string
+          question_id: string
+          weight?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          exam_id?: string
+          id?: string
+          question_id?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_questions_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_questions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exams: {
+        Row: {
+          course_id: string
+          created_at: string | null
+          created_by: string
+          duration: string
+          exam_date: string
+          id: string
+          instructions: string | null
+          name: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          course_id: string
+          created_at?: string | null
+          created_by: string
+          duration: string
+          exam_date: string
+          id?: string
+          instructions?: string | null
+          name: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          course_id?: string
+          created_at?: string | null
+          created_by?: string
+          duration?: string
+          exam_date?: string
+          id?: string
+          instructions?: string | null
+          name?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exams_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          gender: string | null
+          id: string
+          name: string | null
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          gender?: string | null
+          id: string
+          name?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          gender?: string | null
+          id?: string
+          name?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      questions: {
+        Row: {
+          chapter: string | null
+          created_at: string | null
+          created_by: string
+          difficulty: string | null
+          id: string
+          text: string
+          type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          chapter?: string | null
+          created_at?: string | null
+          created_by: string
+          difficulty?: string | null
+          id?: string
+          text: string
+          type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          chapter?: string | null
+          created_at?: string | null
+          created_by?: string
+          difficulty?: string | null
+          id?: string
+          text?: string
+          type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       student_exam_answers: {
         Row: {
           answer: string | null

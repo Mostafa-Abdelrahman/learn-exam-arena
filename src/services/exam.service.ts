@@ -75,12 +75,13 @@ const ExamService = {
   async submitExamWithSupabase(examId: string, studentId: string, answers: any[]) {
     try {
       // Check if an attempt already exists for this exam and student
+      // We need to use any type here to avoid TypeScript errors until Supabase types are updated
       const { data: existingAttempt, error: checkError } = await supabase
         .from('student_exams')
         .select('id')
         .eq('student_id', studentId)
         .eq('exam_id', examId)
-        .maybeSingle();
+        .maybeSingle() as any;
 
       if (checkError) throw checkError;
 
@@ -90,6 +91,7 @@ const ExamService = {
         // Update the existing attempt
         studentExamId = existingAttempt.id;
         
+        // We need to use any type here to avoid TypeScript errors until Supabase types are updated
         const { error: updateError } = await supabase
           .from('student_exams')
           .update({
@@ -97,11 +99,12 @@ const ExamService = {
             completed: true,
             updated_at: new Date().toISOString()
           })
-          .eq('id', studentExamId);
+          .eq('id', studentExamId) as any;
 
         if (updateError) throw updateError;
       } else {
         // Create a new exam attempt
+        // We need to use any type here to avoid TypeScript errors until Supabase types are updated
         const { data: newAttempt, error: createError } = await supabase
           .from('student_exams')
           .insert({
@@ -112,7 +115,7 @@ const ExamService = {
             completed: true
           })
           .select('id')
-          .single();
+          .single() as any;
 
         if (createError) throw createError;
         studentExamId = newAttempt.id;
@@ -125,9 +128,10 @@ const ExamService = {
         answer: answer.answer
       }));
 
+      // We need to use any type here to avoid TypeScript errors until Supabase types are updated
       const { error: answersError } = await supabase
         .from('student_exam_answers')
-        .insert(formattedAnswers);
+        .insert(formattedAnswers) as any;
 
       if (answersError) throw answersError;
 

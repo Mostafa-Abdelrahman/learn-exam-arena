@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -70,9 +71,9 @@ const App = () => (
               <Route
                 path="/admin"
                 element={
-                  // <ProtectedRoute allowedRoles={["admin"]}>
+                  <ProtectedRoute allowedRoles={["admin"]}>
                     <DashboardLayout role="admin" />
-                  // </ProtectedRoute>
+                  </ProtectedRoute>
                 }
               >
                 <Route path="dashboard" element={<AdminDashboard />} />
@@ -90,9 +91,9 @@ const App = () => (
               <Route
                 path="/doctor"
                 element={
-                  // <ProtectedRoute allowedRoles={["doctor"]}>
+                  <ProtectedRoute allowedRoles={["doctor"]}>
                     <DashboardLayout role="doctor" />
-                  // </ProtectedRoute>
+                  </ProtectedRoute>
                 }
               >
                 <Route path="dashboard" element={<DoctorDashboard />} />
@@ -110,9 +111,9 @@ const App = () => (
               <Route
                 path="/student"
                 element={
-                  // <ProtectedRoute allowedRoles={["student"]}>
+                  <ProtectedRoute allowedRoles={["student"]}>
                     <DashboardLayout role="student" />
-                  // </ProtectedRoute>
+                  </ProtectedRoute>
                 }
               >
                 <Route path="dashboard" element={<StudentDashboard />} />

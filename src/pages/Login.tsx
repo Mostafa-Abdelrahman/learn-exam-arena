@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,11 +50,12 @@ const Login = () => {
       });
       
       // Fetch user profile to get role
+      // We need to use any type here to avoid TypeScript errors until Supabase types are updated
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
-        .single();
+        .single() as any;
       
       if (profileError) {
         console.error("Error fetching user profile:", profileError);
