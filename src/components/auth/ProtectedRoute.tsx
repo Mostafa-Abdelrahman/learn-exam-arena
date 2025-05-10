@@ -36,7 +36,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           if (error) {
             console.error("Error fetching user role:", error);
             setIsAuthenticated(false);
-          } else {
+          } else if (data) {
             setUserRole(data.role);
           }
         }
@@ -67,8 +67,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           if (error) {
             console.error("Error fetching user role:", error);
             setIsAuthenticated(false);
-          } else {
+          } else if (data) {
             setUserRole(data.role);
+          } else {
+            setUserRole(null);
           }
         } else {
           setUserRole(null);

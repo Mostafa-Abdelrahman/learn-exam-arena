@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,7 +42,7 @@ interface Exam {
     name: string;
     code: string;
   };
-  student_answers?: StudentExam[];
+  student_exams?: StudentExam[];
 }
 
 interface StudentExam {
@@ -82,7 +83,7 @@ const StudentExams = () => {
       
       if (coursesError) throw coursesError;
       
-      if (studentCourses.length > 0) {
+      if (studentCourses && studentCourses.length > 0) {
         const courseIds = studentCourses.map(sc => sc.course_id);
         
         // Fetch published exams for these courses
@@ -99,14 +100,14 @@ const StudentExams = () => {
         
         // Fetch student's exam attempts
         const { data: studentExams, error: studentExamsError } = await supabase
-          .from("student_answers")
+          .from("student_exams")
           .select("*")
           .eq("student_id", currentUser.id);
         
         if (studentExamsError) throw studentExamsError;
         
         // Get unique exam IDs from student answers
-        const attemptedExamIds = [...new Set(studentExams.map(sa => sa.exam_id))];
+        const attemptedExamIds = studentExams ? [...new Set(studentExams.map(sa => sa.exam_id))] : [];
         
         // Categorize exams - make sure to convert duration to string
         const now = new Date();
@@ -114,25 +115,31 @@ const StudentExams = () => {
         const available: Exam[] = [];
         const completed: Exam[] = [];
         
-        examsData.forEach(exam => {
-          // Convert duration to string
-          const processedExam = {
-            ...exam,
-            duration: String(exam.duration)
-          };
-          
-          const examDate = new Date(processedExam.exam_date);
-          const hasAttempted = attemptedExamIds.includes(processedExam.id);
-          
-          if (hasAttempted) {
-            completed.push(processedExam);
-          } else if (isAfter(examDate, now)) {
-            upcoming.push(processedExam);
-          } else {
-            // Exam date has passed but not attempted - may still be available
-            available.push(processedExam);
-          }
-        });
+        if (examsData) {
+          examsData.forEach(exam => {
+            // Convert duration to string
+            const processedExam = {
+              ...exam,
+              duration: String(exam.duration)
+            };
+            
+            const examDate = new Date(processedExam.exam_date);
+            const hasAttempted = attemptedExamIds.includes(processedExam.id);
+            
+            if (hasAttempted) {
+              const studentExam = studentExams?.find(se => se.exam_id === processedExam.id);
+              completed.push({
+                ...processedExam,
+                student_exams: studentExam ? [studentExam] : []
+              });
+            } else if (isAfter(examDate, now)) {
+              upcoming.push(processedExam);
+            } else {
+              // Exam date has passed but not attempted - may still be available
+              available.push(processedExam);
+            }
+          });
+        }
         
         setUpcomingExams(upcoming);
         setAvailableExams(available);
@@ -190,7 +197,7 @@ const StudentExams = () => {
         icon: <Clock3 className="h-4 w-4 mr-1" />,
         color: "bg-yellow-100 text-yellow-800"
       };
-    } else if (exam.student_answers?.some(a => a.completed)) {
+    } else if (exam.student_exams?.some(a => a.completed)) {
       return {
         label: "Completed",
         icon: <CheckCircle2 className="h-4 w-4 mr-1" />,

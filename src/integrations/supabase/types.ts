@@ -9,7 +9,92 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      student_exam_answers: {
+        Row: {
+          answer: string | null
+          created_at: string | null
+          exam_question_id: string
+          graded: boolean | null
+          graded_at: string | null
+          graded_by: string | null
+          id: string
+          is_correct: boolean | null
+          score: number | null
+          student_exam_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          answer?: string | null
+          created_at?: string | null
+          exam_question_id: string
+          graded?: boolean | null
+          graded_at?: string | null
+          graded_by?: string | null
+          id?: string
+          is_correct?: boolean | null
+          score?: number | null
+          student_exam_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          answer?: string | null
+          created_at?: string | null
+          exam_question_id?: string
+          graded?: boolean | null
+          graded_at?: string | null
+          graded_by?: string | null
+          id?: string
+          is_correct?: boolean | null
+          score?: number | null
+          student_exam_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_exam_answers_student_exam_id_fkey"
+            columns: ["student_exam_id"]
+            isOneToOne: false
+            referencedRelation: "student_exams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_exams: {
+        Row: {
+          completed: boolean | null
+          created_at: string | null
+          end_time: string | null
+          exam_id: string
+          id: string
+          score: number | null
+          start_time: string | null
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string | null
+          end_time?: string | null
+          exam_id: string
+          id?: string
+          score?: number | null
+          start_time?: string | null
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string | null
+          end_time?: string | null
+          exam_id?: string
+          id?: string
+          score?: number | null
+          start_time?: string | null
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

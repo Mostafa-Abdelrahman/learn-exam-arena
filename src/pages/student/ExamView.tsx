@@ -31,6 +31,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
 
 const ExamView = () => {
   const { examId } = useParams();
@@ -76,6 +77,7 @@ const ExamView = () => {
             question_id: question.question_id,
             question_type: question.question_type,
             answer: question.question_type === 'multiple-choice' ? null : '',
+            exam_question_id: question.exam_question_id,
           };
         });
         setAnswers(initialAnswers);
@@ -154,19 +156,21 @@ const ExamView = () => {
   
   // Submit exam
   const handleSubmitExam = async () => {
-    if (isSubmitting || !currentUser) return;
+    if (isSubmitting || !currentUser || !examId) return;
     
     setIsSubmitting(true);
     
     try {
+      // Format the answers for submission
       const formattedAnswers = Object.keys(answers).map((key) => ({
-        exam_question_id: parseInt(key),
-        answer: answers[key].answer,
+        exam_question_id: answers[key].exam_question_id,
+        answer: answers[key].answer || '',
       }));
       
-      await ExamService.submitExamAnswers(
-        Number(examId),
-        currentUser.user_id,
+      // Submit using Supabase
+      await ExamService.submitExamWithSupabase(
+        examId,
+        currentUser.id,
         formattedAnswers
       );
       
@@ -177,10 +181,10 @@ const ExamView = () => {
         description: "Your exam has been submitted successfully.",
         variant: "default",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Submission Error",
-        description: "Failed to submit your exam. Please try again.",
+        description: error.message || "Failed to submit your exam. Please try again.",
         variant: "destructive",
       });
     } finally {

@@ -1,5 +1,6 @@
 
 import API from "./api.service";
+import { supabase } from "@/integrations/supabase/client";
 
 const ExamService = {
   // Get all exams
@@ -68,6 +69,73 @@ const ExamService = {
       student_id: studentId,
       answers: answersData 
     });
+  },
+
+  // Submit exam with Supabase
+  async submitExamWithSupabase(examId: string, studentId: string, answers: any[]) {
+    try {
+      // Check if an attempt already exists for this exam and student
+      const { data: existingAttempt, error: checkError } = await supabase
+        .from('student_exams')
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('exam_id', examId)
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+
+      let studentExamId;
+
+      if (existingAttempt) {
+        // Update the existing attempt
+        studentExamId = existingAttempt.id;
+        
+        const { error: updateError } = await supabase
+          .from('student_exams')
+          .update({
+            end_time: new Date().toISOString(),
+            completed: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', studentExamId);
+
+        if (updateError) throw updateError;
+      } else {
+        // Create a new exam attempt
+        const { data: newAttempt, error: createError } = await supabase
+          .from('student_exams')
+          .insert({
+            student_id: studentId,
+            exam_id: examId,
+            start_time: new Date().toISOString(),
+            end_time: new Date().toISOString(),
+            completed: true
+          })
+          .select('id')
+          .single();
+
+        if (createError) throw createError;
+        studentExamId = newAttempt.id;
+      }
+
+      // Submit all answers
+      const formattedAnswers = answers.map(answer => ({
+        student_exam_id: studentExamId,
+        exam_question_id: answer.exam_question_id,
+        answer: answer.answer
+      }));
+
+      const { error: answersError } = await supabase
+        .from('student_exam_answers')
+        .insert(formattedAnswers);
+
+      if (answersError) throw answersError;
+
+      return { success: true, studentExamId };
+    } catch (error) {
+      console.error('Error submitting exam:', error);
+      throw error;
+    }
   },
 
   // Get student exam results
