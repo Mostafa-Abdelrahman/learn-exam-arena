@@ -6,10 +6,8 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import {
   Table,
@@ -25,10 +23,9 @@ import {
   Search,
   FileText,
   Clock,
-  Calendar,
-  AlertCircle,
   CheckCircle2,
   XCircle,
+  AlertCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -54,12 +51,11 @@ const StudentExams = () => {
     try {
       setLoading(true);
       
-      // Create a proper SQL query since student_courses isn't in the database schema yet
+      // Use the get_student_exams function to fetch exams
       const { data: studentExamsData, error: examsError } = await supabase
         .rpc('get_student_exams', { student_id: currentUser.id });
       
       if (examsError) {
-        // Fallback if RPC doesn't exist
         console.error("Error fetching student exams:", examsError);
         toast({
           title: "Error fetching exams",
@@ -71,21 +67,23 @@ const StudentExams = () => {
       }
       
       // Transform the data to match Exam interface
-      const formattedExams: Exam[] = studentExamsData.map((exam: any) => ({
-        id: exam.id,
-        name: exam.name,
-        course_id: exam.course_id,
-        exam_date: exam.exam_date,
-        duration: exam.duration,
-        instructions: exam.instructions || "",
-        status: exam.status as "draft" | "published" | "archived",
-        created_by: exam.created_by,
-        created_at: exam.created_at,
-        updated_at: exam.updated_at,
-        course: exam.course || { name: "", code: "" }
-      }));
-      
-      setExams(formattedExams);
+      if (studentExamsData) {
+        const formattedExams: Exam[] = studentExamsData.map((exam: any) => ({
+          id: exam.id,
+          name: exam.name,
+          course_id: exam.course_id,
+          exam_date: exam.exam_date,
+          duration: exam.duration,
+          instructions: exam.instructions || "",
+          status: exam.status as "draft" | "published" | "archived",
+          created_by: exam.created_by,
+          created_at: exam.created_at,
+          updated_at: exam.updated_at,
+          course: exam.course || { name: "", code: "" }
+        }));
+        
+        setExams(formattedExams);
+      }
     } catch (error: any) {
       console.error("Error fetching exams:", error);
       toast({

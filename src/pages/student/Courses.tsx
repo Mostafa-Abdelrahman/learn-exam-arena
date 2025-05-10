@@ -11,7 +11,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Loader2, Search, Book, Users, FileText, Calendar } from "lucide-react";
+import { Loader2, Search, Book, Users, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
@@ -45,12 +45,11 @@ const StudentCourses = () => {
     try {
       setLoading(true);
       
-      // Create a proper SQL query since student_courses isn't in the database schema yet
+      // Use the get_student_courses function to fetch courses
       const { data: studentCoursesData, error: coursesError } = await supabase
         .rpc('get_student_courses', { student_id: currentUser.id });
       
       if (coursesError) {
-        // Fallback if RPC doesn't exist - direct query
         console.error("Error fetching student courses:", coursesError);
         toast({
           title: "Error fetching courses",
@@ -63,23 +62,17 @@ const StudentCourses = () => {
       
       // If we have course data, process it
       if (studentCoursesData && studentCoursesData.length > 0) {
-        const coursesWithDetails: Course[] = [];
-        
-        for (const course of studentCoursesData) {
-          // Set description to empty string if not available to match interface
-          const courseWithDetails: Course = {
-            id: course.id,
-            name: course.name,
-            code: course.code,
-            description: course.description || "",
-            doctors: course.doctors || [],
-            exam_count: course.exam_count || 0,
-            created_at: course.created_at,
-            updated_at: course.updated_at
-          };
-          
-          coursesWithDetails.push(courseWithDetails);
-        }
+        // Type assertion to match the Course interface
+        const coursesWithDetails = studentCoursesData.map((course: any): Course => ({
+          id: course.id,
+          name: course.name,
+          code: course.code,
+          description: course.description || "",
+          doctors: Array.isArray(course.doctors) ? course.doctors : [],
+          exam_count: Number(course.exam_count) || 0,
+          created_at: course.created_at,
+          updated_at: course.updated_at
+        }));
         
         setCourses(coursesWithDetails);
       }

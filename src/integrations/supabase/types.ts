@@ -246,6 +246,41 @@ export type Database = {
         }
         Relationships: []
       }
+      student_courses: {
+        Row: {
+          course_id: string
+          created_at: string | null
+          enrolled_at: string | null
+          id: string
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          course_id: string
+          created_at?: string | null
+          enrolled_at?: string | null
+          id?: string
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          course_id?: string
+          created_at?: string | null
+          enrolled_at?: string | null
+          id?: string
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_exam_answers: {
         Row: {
           answer: string | null
@@ -337,7 +372,35 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_student_courses: {
+        Args: { student_id: string }
+        Returns: {
+          id: string
+          name: string
+          code: string
+          description: string
+          created_at: string
+          updated_at: string
+          doctors: Json
+          exam_count: number
+        }[]
+      }
+      get_student_exams: {
+        Args: { student_id: string }
+        Returns: {
+          id: string
+          name: string
+          course_id: string
+          exam_date: string
+          duration: string
+          instructions: string
+          status: string
+          created_by: string
+          created_at: string
+          updated_at: string
+          course: Json
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
