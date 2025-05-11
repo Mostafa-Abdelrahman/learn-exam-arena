@@ -14,18 +14,7 @@ import { Loader2, Search, Book, Users, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import CourseService from "@/services/course.service";
-
-interface Course {
-  id: string;
-  name: string;
-  code: string;
-  description: string;
-  doctors: {
-    id: string;
-    name: string;
-  }[];
-  exam_count: number;
-}
+import { Course } from "@/types/student-courses";
 
 const StudentCourses = () => {
   const { currentUser } = useAuth();
@@ -46,7 +35,7 @@ const StudentCourses = () => {
       setLoading(true);
       
       // Fetch courses from our Laravel API
-      const response = await CourseService.getStudentCourses(currentUser.id);
+      const response = await CourseService.getStudentCourses();
       
       if (response && response.data) {
         setCourses(response.data);
