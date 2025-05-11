@@ -59,7 +59,7 @@ const StudentDashboard = () => {
     queryFn: async () => {
       if (!currentUser) return [];
       try {
-        const response = await CourseService.getStudentCourses(currentUser.user_id);
+        const response = await CourseService.getStudentCourses();
         return response.data;
       } catch (error) {
         toast({
@@ -77,7 +77,7 @@ const StudentDashboard = () => {
     queryFn: async () => {
       if (!currentUser) return [];
       try {
-        const response = await ExamService.getStudentExams(currentUser.user_id);
+        const response = await ExamService.getStudentExams();
         return response.data;
       } catch (error) {
         toast({

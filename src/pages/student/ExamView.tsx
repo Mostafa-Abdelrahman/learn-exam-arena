@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -31,7 +30,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { supabase } from "@/integrations/supabase/client";
 
 const ExamView = () => {
   const { examId } = useParams();
@@ -50,7 +48,7 @@ const ExamView = () => {
     queryKey: ["exam-details", examId],
     queryFn: async () => {
       try {
-        const response = await ExamService.getExam(Number(examId));
+        const response = await ExamService.getExam(examId || "");
         return response.data;
       } catch (error) {
         toast({
@@ -68,7 +66,7 @@ const ExamView = () => {
     queryKey: ["exam-questions", examId],
     queryFn: async () => {
       try {
-        const response = await ExamService.getExamQuestions(Number(examId));
+        const response = await ExamService.getExamQuestions(examId || "");
         
         // Initialize answers object with empty values for each question
         const initialAnswers = {};
@@ -167,12 +165,8 @@ const ExamView = () => {
         answer: answers[key].answer || '',
       }));
       
-      // Submit using Supabase
-      await ExamService.submitExamWithSupabase(
-        examId,
-        currentUser.id,
-        formattedAnswers
-      );
+      // Submit using the ExamService
+      await ExamService.submitExam(examId, formattedAnswers);
       
       setExamFinished(true);
       
