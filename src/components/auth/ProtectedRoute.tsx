@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import AuthService from "@/services/auth.service";
 
 interface ProtectedRouteProps {
@@ -40,17 +41,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     checkAuth();
 
     // Set up event listener for auth changes
-    const handleStorageChange = async () => {
-      const authenticated = await AuthService.isAuthenticated();
-      setIsAuthenticated(authenticated);
-      
-      if (authenticated) {
-        const role = await AuthService.getUserRole();
-        setUserRole(role);
-      } else {
-        setUserRole(null);
+    const handleStorageChange = async (event: StorageEvent) => {
+      if (event.key === 'token') {
+        const authenticated = await AuthService.isAuthenticated();
+        setIsAuthenticated(authenticated);
+        
+        if (authenticated) {
+          const role = await AuthService.getUserRole();
+          setUserRole(role);
+        } else {
+          setUserRole(null);
+        }
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     window.addEventListener('storage', handleStorageChange);
@@ -63,7 +66,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     // Show loading indicator while checking authentication
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="animate-spin rounded-full border-t-2 border-b-2 border-primary h-12 w-12"></div>
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+          <p className="text-muted-foreground">Verifying authentication...</p>
+        </div>
       </div>
     );
   }

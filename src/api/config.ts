@@ -1,7 +1,7 @@
 
 import axios from 'axios';
 
-// Define the base URL for your Laravel API
+// Define the base URL for your API
 const BASE_URL = 'http://localhost:8000/api';
 
 // Create an axios instance with default config
@@ -32,11 +32,26 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Handle expired token
     if (error.response?.status === 401) {
-      // Handle unauthorized (e.g., redirect to login)
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      localStorage.removeItem('user');
+      
+      // Only redirect to login if not already on login page
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
     }
+    
+    // Handle validation errors
+    if (error.response?.status === 422) {
+      // Return structured validation errors to be handled by components
+      return Promise.reject({
+        message: error.response.data.message,
+        errors: error.response.data.errors
+      });
+    }
+    
     return Promise.reject(error);
   }
 );

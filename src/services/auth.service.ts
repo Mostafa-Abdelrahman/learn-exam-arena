@@ -4,7 +4,7 @@ import api from '../api/config';
 // User types
 export interface User {
   id: string;
-  user_id: string; // Adding this property to fix the type errors
+  user_id: string; 
   name: string;
   email: string;
   role: "admin" | "doctor" | "student";
@@ -22,47 +22,77 @@ export interface RegisterData extends LoginCredentials {
   role: "admin" | "doctor" | "student";
 }
 
+export interface PasswordResetRequest {
+  email: string;
+}
+
+export interface PasswordResetData {
+  token: string;
+  email: string;
+  password: string;
+  password_confirmation: string;
+}
+
 const AuthService = {
-  // Login using Laravel API
+  // Login using API
   async login(credentials: LoginCredentials) {
     const response = await api.post('/login', credentials);
     
     // Store the token
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
+      
+      // Also store user data if available
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
     }
     
     return response.data;
   },
 
-  // Logout using Laravel API
+  // Logout using API
   async logout() {
     try {
       await api.post('/logout');
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
       return true;
     } catch (error) {
       console.error('Logout error:', error);
       // Still remove token on client side even if API call fails
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
       return true;
     }
   },
 
-  // Register using Laravel API
+  // Register using API
   async register(userData: RegisterData) {
     const response = await api.post('/register', userData);
     return response.data;
   },
 
-  // Get current user from Laravel API
+  // Get current user from API
   async getCurrentUser(): Promise<User | null> {
     try {
       const token = localStorage.getItem('token');
       if (!token) return null;
       
+      // Try to get from local storage first for faster response
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        return JSON.parse(storedUser);
+      }
+      
       // Make a request to get the authenticated user
       const response = await api.get('/user');
+      
+      // Cache the user data
+      if (response.data) {
+        localStorage.setItem('user', JSON.stringify(response.data));
+      }
+      
       return response.data;
     } catch (error) {
       console.error('Get current user error:', error);
@@ -84,6 +114,18 @@ const AuthService = {
   async getUserRole(): Promise<string | null> {
     const user = await this.getCurrentUser();
     return user ? user.role : null;
+  },
+  
+  // Request password reset
+  async forgotPassword(email: PasswordResetRequest): Promise<any> {
+    const response = await api.post('/forgot-password', email);
+    return response.data;
+  },
+  
+  // Reset password with token
+  async resetPassword(resetData: PasswordResetData): Promise<any> {
+    const response = await api.post('/reset-password', resetData);
+    return response.data;
   }
 };
 
