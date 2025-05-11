@@ -71,7 +71,17 @@ const DoctorExams = () => {
 
   const handleAddExam = async (examData: ExamFormData) => {
     try {
-      if (!examName.trim() || !courseId || !examDate || !duration.trim() || !currentUser) {
+      if (!currentUser) {
+        toast({
+          title: "Validation error",
+          description: "User not authenticated",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if required fields are present in examData
+      if (!examData.name.trim() || !examData.course_id || !examData.exam_date || !examData.duration.trim()) {
         toast({
           title: "Validation error",
           description: "All fields are required",
