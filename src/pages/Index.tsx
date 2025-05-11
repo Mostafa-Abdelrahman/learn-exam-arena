@@ -2,32 +2,37 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import AuthService from "@/services/auth.service";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, profile } = useAuth();
+  const { isAuthenticated, currentUser } = useAuth();
 
   useEffect(() => {
-    // If user is authenticated, redirect to the appropriate dashboard
-    if (isAuthenticated && profile) {
-      switch (profile.role) {
-        case "admin":
-          navigate("/admin/dashboard");
-          break;
-        case "doctor":
-          navigate("/doctor/dashboard");
-          break;
-        case "student":
-          navigate("/student/dashboard");
-          break;
-        default:
-          navigate("/login");
+    const checkAuth = async () => {
+      // If user is authenticated, redirect to the appropriate dashboard
+      if (isAuthenticated && currentUser) {
+        switch (currentUser.role) {
+          case "admin":
+            navigate("/admin/dashboard");
+            break;
+          case "doctor":
+            navigate("/doctor/dashboard");
+            break;
+          case "student":
+            navigate("/student/dashboard");
+            break;
+          default:
+            navigate("/login");
+        }
+      } else {
+        // If not authenticated, redirect to login
+        navigate("/login");
       }
-    } else {
-      // If not authenticated, redirect to login
-      navigate("/login");
-    }
-  }, [isAuthenticated, profile, navigate]);
+    };
+    
+    checkAuth();
+  }, [isAuthenticated, currentUser, navigate]);
 
   // Loading state while redirecting
   return (

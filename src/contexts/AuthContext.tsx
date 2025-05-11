@@ -1,9 +1,8 @@
 
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Session, User, AuthError } from "@supabase/supabase-js";
+import AuthService, { User } from "@/services/auth.service";
 
 interface LoginCredentials {
   email: string;
@@ -17,10 +16,9 @@ interface SignUpData extends LoginCredentials {
 }
 
 interface AuthContextType {
-  session: Session | null;
   user: User | null;
-  profile: any | null;
-  currentUser: any | null;
+  profile: User | null;
+  currentUser: User | null;
   loading: boolean;
   error: string | null;
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -31,11 +29,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Fix: AuthProvider wasn't wrapped correctly in a React component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -43,68 +38,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set up auth state listener FIRST to prevent missing auth events
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setIsAuthenticated(!!session);
-
-        if (session?.user) {
-          try {
-            // We need to use any type here to avoid TypeScript errors until Supabase types are updated
-            const { data: profile, error } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single() as any;
-            
-            if (error) {
-              console.error('Error fetching user profile:', error);
-              toast({
-                title: "Profile Error",
-                description: "Failed to load user profile",
-                variant: "destructive",
-              });
-            } else {
-              setProfile(profile);
-            }
-          } catch (err) {
-            console.error('Profile fetch error:', err);
-          }
-        } else {
-          setProfile(null);
-        }
-      }
-    );
-
     const initializeAuth = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        setIsAuthenticated(!!session);
-        
-        if (session?.user) {
-          // We need to use any type here to avoid TypeScript errors until Supabase types are updated
-          const { data, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single() as any;
-            
-          if (profileError) {
-            console.error('Profile initialization error:', profileError);
-            toast({
-              title: "Profile Error",
-              description: "Failed to initialize user profile",
-              variant: "destructive",
-            });
-          } else {
-            setProfile(data);
-          }
+        // Check if user is authenticated
+        const authenticated = await AuthService.isAuthenticated();
+        setIsAuthenticated(authenticated);
+
+        if (authenticated) {
+          // Get current user data
+          const currentUser = await AuthService.getCurrentUser();
+          setUser(currentUser);
         }
       } catch (err) {
         console.error('Auth initialization error:', err);
@@ -114,41 +57,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     initializeAuth();
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [toast, navigate]);
 
-  const handleAuthError = (error: AuthError, action: string) => {
-    console.error(`${action} error:`, error);
-    const errorMessage = error.message === 'Database error saving new user'
-      ? 'Failed to create user profile. Please try again.'
-      : error.message;
+    // Event listener for handling changes to authentication state
+    const handleStorageChange = async (event: StorageEvent) => {
+      if (event.key === 'token') {
+        const authenticated = await AuthService.isAuthenticated();
+        setIsAuthenticated(authenticated);
+        
+        if (authenticated) {
+          const currentUser = await AuthService.getCurrentUser();
+          setUser(currentUser);
+        } else {
+          setUser(null);
+        }
+      }
+    };
     
-    setError(errorMessage);
-    toast({
-      title: `${action} failed`,
-      description: errorMessage,
-      variant: "destructive",
-    });
-  };
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   const login = async (credentials: LoginCredentials) => {
     try {
       setLoading(true);
       setError(null);
-      const { error } = await supabase.auth.signInWithPassword(credentials);
       
-      if (error) throw error;
+      const response = await AuthService.login(credentials);
       
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
-    } catch (err) {
-      if (err instanceof Error) {
-        handleAuthError(err as AuthError, "Login");
+      if (response) {
+        const currentUser = await AuthService.getCurrentUser();
+        setUser(currentUser);
+        setIsAuthenticated(true);
+        
+        toast({
+          title: "Login successful",
+          description: "Welcome back!",
+        });
+        
+        // Redirect based on user role
+        if (currentUser?.role === "admin") {
+          navigate("/admin/dashboard");
+        } else if (currentUser?.role === "doctor") {
+          navigate("/doctor/dashboard");
+        } else if (currentUser?.role === "student") {
+          navigate("/student/dashboard");
+        } else {
+          navigate("/");
+        }
       }
+    } catch (err: any) {
+      setError(err.message || "Failed to login");
+      toast({
+        title: "Login failed",
+        description: err.message || "Failed to login. Please check your credentials.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -159,37 +124,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setError(null);
       
-      console.log('Starting signup process with data:', { 
-        email: data.email,
-        role: data.role,
-        name: data.name,
-        gender: data.gender 
-      });
+      await AuthService.register(data);
       
-      const { error } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            name: data.name,
-            gender: data.gender,
-            role: data.role,
-          },
-        },
-      });
-
-      if (error) {
-        throw error;
-      }
-
       toast({
         title: "Registration successful",
-        description: "Please check your email to confirm your account.",
+        description: "Please login with your new account.",
       });
-    } catch (err) {
-      if (err instanceof Error) {
-        handleAuthError(err as AuthError, "Registration");
-      }
+      
+      navigate("/login");
+    } catch (err: any) {
+      setError(err.message || "Failed to register");
+      toast({
+        title: "Registration failed",
+        description: err.message || "Failed to register. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -198,28 +147,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      
+      await AuthService.logout();
+      setUser(null);
+      setIsAuthenticated(false);
       
       navigate("/login");
       toast({
         title: "Logged out",
         description: "You have been successfully logged out",
       });
-    } catch (err) {
-      if (err instanceof Error) {
-        handleAuthError(err as AuthError, "Logout");
-      }
+    } catch (err: any) {
+      toast({
+        title: "Logout error",
+        description: err.message || "An error occurred during logout",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const value = {
-    session,
     user,
-    profile,
-    currentUser: profile,
+    profile: user, // For backward compatibility
+    currentUser: user, // For backward compatibility
     loading,
     error,
     login,

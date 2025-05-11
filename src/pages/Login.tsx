@@ -1,7 +1,5 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import AuthService from "@/services/auth.service";
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -37,34 +36,21 @@ const Login = () => {
     setLoading(true);
     
     try {
-      const { error: signInError, data } = await supabase.auth.signInWithPassword({
+      const response = await AuthService.login({
         email,
         password,
       });
-      
-      if (signInError) throw signInError;
       
       toast({
         title: "Login successful",
         description: "Welcome back!",
       });
       
-      // Fetch user profile to get role
-      // We need to use any type here to avoid TypeScript errors until Supabase types are updated
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .single() as any;
-      
-      if (profileError) {
-        console.error("Error fetching user profile:", profileError);
-        navigate("/");
-        return;
-      }
+      // Get user data to determine role
+      const user = await AuthService.getCurrentUser();
       
       // Redirect based on user role
-      const userRole = profileData.role;
+      const userRole = user?.role;
       if (userRole === "admin") {
         navigate("/admin/dashboard");
       } else if (userRole === "doctor") {
@@ -92,23 +78,17 @@ const Login = () => {
     setLoading(true);
     
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      await AuthService.register({
+        name,
         email: regEmail,
         password: regPassword,
-        options: {
-          data: {
-            name,
-            gender,
-            role,
-          },
-        },
+        gender,
+        role,
       });
-      
-      if (signUpError) throw signUpError;
       
       toast({
         title: "Registration successful",
-        description: "Please check your email to confirm your account or login now.",
+        description: "Please login with your new account.",
       });
       
       // Switch to login tab
