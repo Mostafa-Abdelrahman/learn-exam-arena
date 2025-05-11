@@ -56,7 +56,7 @@ const DoctorDashboard = () => {
     queryFn: async () => {
       if (!currentUser) return [];
       try {
-        const response = await CourseService.getDoctorCourses(currentUser.user_id);
+        const response = await CourseService.getDoctorCourses(currentUser.id);
         return response.data;
       } catch (error) {
         toast({
@@ -74,7 +74,7 @@ const DoctorDashboard = () => {
     queryFn: async () => {
       if (!currentUser) return [];
       try {
-        const response = await ExamService.getDoctorExams(currentUser.user_id);
+        const response = await ExamService.getDoctorExams(currentUser.id);
         return response.data;
       } catch (error) {
         toast({

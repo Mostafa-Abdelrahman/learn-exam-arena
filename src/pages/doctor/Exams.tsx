@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import DoctorService, { Exam, ExamQuestion, Question } from "@/services/doctor.service";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -58,46 +58,18 @@ const DoctorExams = () => {
   const fetchExams = async () => {
     try {
       setLoading(true);
-      
-      // Get courses assigned to this doctor
-      const { data: doctorCourses, error: coursesError } = await supabase
-        .from("doctor_courses")
-        .select("course_id")
-        .eq("doctor_id", currentUser.id);
-      
-      if (coursesError) throw coursesError;
-      
-      if (doctorCourses.length === 0) {
+      if (!currentUser) {
         setLoading(false);
         return;
       }
       
-      const courseIds = doctorCourses.map(dc => dc.course_id);
-      
-      // Get exams for these courses with course information
-      const { data: examsData, error: examsError } = await supabase
-        .from("exams")
-        .select(`
-          *,
-          course:courses(name, code)
-        `)
-        .in("course_id", courseIds);
-      
-      if (examsError) throw examsError;
-      
-      // Type cast the exams to ensure compatibility
-      setExams(examsData as Exam[]);
+      // Get exams for this doctor
+      const { data: examsData } = await DoctorService.getExams(currentUser.id);
+      setExams(examsData);
 
       // Also fetch all questions for potential use in exams
-      const { data: questionsData, error: questionsError } = await supabase
-        .from("questions")
-        .select("*")
-        .eq("created_by", currentUser.id);
-      
-      if (questionsError) throw questionsError;
-      
-      // Type cast questions to ensure compatibility
-      setAvailableQuestions(questionsData as Question[]);
+      const { data: questionsData } = await DoctorService.getQuestions(currentUser.id);
+      setAvailableQuestions(questionsData);
       
       setLoading(false);
     } catch (error: any) {
@@ -112,12 +84,9 @@ const DoctorExams = () => {
 
   const fetchCourses = async () => {
     try {
-      const { data, error } = await supabase
-        .from("courses")
-        .select("*");
-
-      if (error) throw error;
-
+      if (!currentUser) return;
+      
+      const { data } = await DoctorService.getCourses(currentUser.id);
       setCourses(data);
     } catch (error: any) {
       toast({
@@ -130,7 +99,7 @@ const DoctorExams = () => {
 
   const handleAddExam = async () => {
     try {
-      if (!examName.trim() || !courseId || !examDate || !duration.trim()) {
+      if (!examName.trim() || !courseId || !examDate || !duration.trim() || !currentUser) {
         toast({
           title: "Validation error",
           description: "All fields are required",
@@ -139,21 +108,15 @@ const DoctorExams = () => {
         return;
       }
 
-      const { data, error } = await supabase
-        .from("exams")
-        .insert({
-          name: examName,
-          course_id: courseId,
-          exam_date: examDate.toISOString(),
-          duration: duration,
-          instructions: instructions || null,
-          status: status,
-          created_by: currentUser.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
+      const { data } = await DoctorService.createExam({
+        name: examName,
+        course_id: courseId,
+        exam_date: examDate.toISOString(),
+        duration: duration,
+        instructions: instructions || null,
+        status: status,
+        created_by: currentUser.id,
+      });
 
       toast({
         title: "Success",
@@ -174,12 +137,7 @@ const DoctorExams = () => {
 
   const handleDeleteExam = async (examId: string) => {
     try {
-      const { error } = await supabase
-        .from("exams")
-        .delete()
-        .eq("id", examId);
-
-      if (error) throw error;
+      await DoctorService.deleteExam(examId);
 
       toast({
         title: "Success",
@@ -212,19 +170,14 @@ const DoctorExams = () => {
     if (!selectedExam) return;
 
     try {
-      const { error } = await supabase
-        .from("exams")
-        .update({
-          name: examName,
-          course_id: courseId,
-          exam_date: examDate?.toISOString(),
-          duration: duration,
-          instructions: instructions || null,
-          status: status,
-        })
-        .eq("id", selectedExam.id);
-
-      if (error) throw error;
+      await DoctorService.updateExam(selectedExam.id, {
+        name: examName,
+        course_id: courseId,
+        exam_date: examDate?.toISOString(),
+        duration: duration,
+        instructions: instructions || null,
+        status: status,
+      });
 
       toast({
         title: "Success",
@@ -258,18 +211,8 @@ const DoctorExams = () => {
     try {
       setLoadingQuestions(true);
       
-      const { data, error } = await supabase
-        .from("exam_questions")
-        .select(`
-          *,
-          question:questions(*)
-        `)
-        .eq("exam_id", examId);
-      
-      if (error) throw error;
-      
-      // Type cast to ensure compatibility
-      setExamQuestions(data as ExamQuestion[]);
+      const { data } = await DoctorService.getExamQuestions(examId);
+      setExamQuestions(data);
       setLoadingQuestions(false);
     } catch (error: any) {
       toast({
@@ -285,15 +228,7 @@ const DoctorExams = () => {
     if (!selectedExam) return;
 
     try {
-      const { error } = await supabase
-        .from("exam_questions")
-        .insert({
-          exam_id: selectedExam.id,
-          question_id: questionId,
-          weight: 1, // Default weight
-        });
-
-      if (error) throw error;
+      await DoctorService.addQuestionToExam(selectedExam.id, questionId);
 
       toast({
         title: "Success",
@@ -314,12 +249,7 @@ const DoctorExams = () => {
     if (!selectedExam) return;
 
     try {
-      const { error } = await supabase
-        .from("exam_questions")
-        .delete()
-        .eq("id", examQuestionId);
-
-      if (error) throw error;
+      await DoctorService.removeQuestionFromExam(examQuestionId);
 
       toast({
         title: "Success",

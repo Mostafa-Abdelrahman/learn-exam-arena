@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import DoctorService, { Question, Choice } from "@/services/doctor.service";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,23 +22,6 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trash2, Edit, Plus, Search, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-interface Question {
-  id: string;
-  text: string;
-  type: "mcq" | "written";
-  chapter?: string;
-  difficulty?: "easy" | "medium" | "hard";
-  created_by: string;
-  evaluation_criteria?: string;
-}
-
-interface Choice {
-  id: string;
-  question_id: string;
-  text: string;
-  is_correct: boolean;
-}
 
 interface McqChoice {
   id?: string;
@@ -76,15 +59,13 @@ const DoctorQuestions = () => {
   const fetchQuestions = async () => {
     try {
       setLoading(true);
-      const { data: questionsData, error } = await supabase
-        .from("questions")
-        .select("*")
-        .eq("created_by", currentUser.id);
-
-      if (error) throw error;
-
-      // Type cast to ensure compatibility
-      setQuestions(questionsData as Question[]);
+      if (!currentUser) {
+        setLoading(false);
+        return;
+      }
+      
+      const { data: questionsData } = await DoctorService.getQuestions(currentUser.id);
+      setQuestions(questionsData);
 
       if (questionsData.length > 0) {
         const mcqQuestionIds = questionsData
@@ -92,14 +73,15 @@ const DoctorQuestions = () => {
           .map(q => q.id);
 
         if (mcqQuestionIds.length > 0) {
-          const { data: choicesData, error: choicesError } = await supabase
-            .from("choices")
-            .select("*")
-            .in("question_id", mcqQuestionIds);
-
-          if (choicesError) throw choicesError;
-          // Type cast to ensure compatibility
-          setChoices(choicesData as Choice[]);
+          // For each MCQ question, get its choices
+          const allChoices: Choice[] = [];
+          
+          for (const questionId of mcqQuestionIds) {
+            const { data: choicesData } = await DoctorService.getQuestionChoices(questionId);
+            allChoices.push(...choicesData);
+          }
+          
+          setChoices(allChoices);
         }
       }
     } catch (error: any) {
@@ -115,7 +97,7 @@ const DoctorQuestions = () => {
 
   const handleAddQuestion = async () => {
     try {
-      if (!questionText.trim()) {
+      if (!questionText.trim() || !currentUser) {
         toast({
           title: "Validation error",
           description: "Question text is required",
@@ -146,34 +128,26 @@ const DoctorQuestions = () => {
         }
       }
 
-      const { data: questionData, error: questionError } = await supabase
-        .from("questions")
-        .insert({
-          text: questionText,
-          type: questionType,
-          chapter: chapter || null,
-          difficulty: difficulty || null,
-          created_by: currentUser.id,
-          evaluation_criteria: questionType === "written" ? evaluationCriteria : null,
-        })
-        .select()
-        .single();
+      // Create the question
+      const { data: questionData } = await DoctorService.createQuestion({
+        text: questionText,
+        type: questionType,
+        chapter: chapter || null,
+        difficulty: difficulty || null,
+        created_by: currentUser.id,
+        evaluation_criteria: questionType === "written" ? evaluationCriteria : null,
+      });
 
-      if (questionError) throw questionError;
-
+      // Create choices for MCQ questions
       if (questionType === "mcq" && questionData) {
-        const choicesForInsert = mcqChoices.map(choice => ({
-          question_id: questionData.id,
-          text: choice.text,
-          is_correct: choice.is_correct,
-        }));
-
-        // Use `from("choices")` with proper type casting
-        const { error: choicesError } = await supabase
-          .from("choices")
-          .insert(choicesForInsert);
-
-        if (choicesError) throw choicesError;
+        for (const choice of mcqChoices) {
+          if (choice.text.trim()) {
+            await DoctorService.createChoice(questionData.id, {
+              text: choice.text,
+              is_correct: choice.is_correct,
+            });
+          }
+        }
       }
 
       toast({
@@ -195,12 +169,7 @@ const DoctorQuestions = () => {
 
   const handleDeleteQuestion = async (questionId: string) => {
     try {
-      const { error } = await supabase
-        .from("questions")
-        .delete()
-        .eq("id", questionId);
-
-      if (error) throw error;
+      await DoctorService.deleteQuestion(questionId);
 
       toast({
         title: "Success",
@@ -250,40 +219,25 @@ const DoctorQuestions = () => {
     if (!selectedQuestion) return;
 
     try {
-      const { error: questionError } = await supabase
-        .from("questions")
-        .update({
-          text: questionText,
-          chapter: chapter || null,
-          difficulty: difficulty || null,
-          evaluation_criteria: questionType === "written" ? evaluationCriteria : null,
-        })
-        .eq("id", selectedQuestion.id);
-
-      if (questionError) throw questionError;
+      await DoctorService.updateQuestion(selectedQuestion.id, {
+        text: questionText,
+        chapter: chapter || null,
+        difficulty: difficulty || null,
+        evaluation_criteria: questionType === "written" ? evaluationCriteria : null,
+      });
 
       if (questionType === "mcq") {
         for (const choice of mcqChoices) {
           if (choice.id) {
-            const { error: updateError } = await supabase
-              .from("choices")
-              .update({
-                text: choice.text,
-                is_correct: choice.is_correct,
-              })
-              .eq("id", choice.id);
-
-            if (updateError) throw updateError;
+            await DoctorService.updateChoice(choice.id, {
+              text: choice.text,
+              is_correct: choice.is_correct,
+            });
           } else if (choice.text.trim()) {
-            const { error: insertError } = await supabase
-              .from("choices")
-              .insert({
-                question_id: selectedQuestion.id,
-                text: choice.text,
-                is_correct: choice.is_correct,
-              });
-
-            if (insertError) throw insertError;
+            await DoctorService.createChoice(selectedQuestion.id, {
+              text: choice.text,
+              is_correct: choice.is_correct,
+            });
           }
         }
       }

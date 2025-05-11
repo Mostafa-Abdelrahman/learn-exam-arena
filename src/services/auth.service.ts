@@ -4,6 +4,7 @@ import api from '../api/config';
 // User types
 export interface User {
   id: string;
+  user_id: string; // Adding this property to fix the type errors
   name: string;
   email: string;
   role: "admin" | "doctor" | "student";
