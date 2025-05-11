@@ -1,96 +1,54 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import api from '../api/config';
 
 const QuestionService = {
   // Get all questions
   async getAllQuestions() {
-    const { data, error } = await supabase
-      .from('questions')
-      .select('*');
-    
-    if (error) throw error;
-    return data;
+    const response = await api.get('/questions');
+    return response.data;
   },
   
   // Get a specific question by ID
   async getQuestion(id: string) {
-    const { data, error } = await supabase
-      .from('questions')
-      .select('*, choices(*)')
-      .eq('id', id)
-      .single();
-    
-    if (error) throw error;
-    return data;
+    const response = await api.get(`/questions/${id}`);
+    return response.data;
   },
   
   // Create a new question
-  async createQuestion(questionData: Omit<Question, 'id' | 'created_at' | 'updated_at'>) {
-    const { data, error } = await supabase
-      .from('questions')
-      .insert(questionData)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
+  async createQuestion(questionData: Omit<Question, 'id'>) {
+    const response = await api.post('/questions', questionData);
+    return response.data;
   },
   
   // Update a question
   async updateQuestion(id: string, questionData: Partial<Question>) {
-    // Ensure created_by is not undefined if it's required
-    if (!questionData.created_by && !questionData.id) {
-      console.error("created_by is required when updating a question");
-      throw new Error("created_by is required");
-    }
-    
-    const { data, error } = await supabase
-      .from('questions')
-      .update(questionData as any) // Type assertion to bypass TypeScript error
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
+    const response = await api.put(`/questions/${id}`, questionData);
+    return response.data;
   },
   
   // Delete a question
   async deleteQuestion(id: string) {
-    const { error } = await supabase
-      .from('questions')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
+    await api.delete(`/questions/${id}`);
     return true;
   },
   
   // Create choices for a question
-  async createChoices(questionId: string, choices: Omit<Choice, 'id' | 'created_at' | 'updated_at'>[]) {
+  async createChoices(questionId: string, choices: Omit<Choice, 'id'>[]) {
+    // The Laravel route for choices may differ, adjust as needed
     const choicesWithQuestionId = choices.map(choice => ({
       ...choice,
       question_id: questionId
     }));
     
-    const { data, error } = await supabase
-      .from('choices')
-      .insert(choicesWithQuestionId)
-      .select();
-    
-    if (error) throw error;
-    return data;
+    const response = await api.post(`/questions/${questionId}/choices`, { choices: choicesWithQuestionId });
+    return response.data;
   },
   
   // Get choices for a question
   async getChoicesForQuestion(questionId: string) {
-    const { data, error } = await supabase
-      .from('choices')
-      .select('*')
-      .eq('question_id', questionId);
-    
-    if (error) throw error;
-    return data;
+    // Adapt this to the appropriate Laravel endpoint
+    const response = await api.get(`/questions/${questionId}/choices`);
+    return response.data;
   }
 };
 

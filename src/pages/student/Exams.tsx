@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -30,20 +29,25 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import ExamService from "@/services/exam.service";
 
 const StudentExams = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [exams, setExams] = useState<Exam[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Check if we have a specific courseId from navigation state
+  const courseId = location.state?.courseId;
 
   useEffect(() => {
     if (currentUser) {
       fetchExams();
     }
-  }, [currentUser]);
+  }, [currentUser, courseId]);
 
   const fetchExams = async () => {
     if (!currentUser) return;
@@ -51,44 +55,23 @@ const StudentExams = () => {
     try {
       setLoading(true);
       
-      // Use the get_student_exams function to fetch exams
-      const { data: studentExamsData, error: examsError } = await supabase
-        .rpc('get_student_exams', { student_id: currentUser.id });
-      
-      if (examsError) {
-        console.error("Error fetching student exams:", examsError);
-        toast({
-          title: "Error fetching exams",
-          description: "Could not load your exams. Please try again later.",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
+      let response;
+      if (courseId) {
+        // If courseId is provided, fetch exams for that specific course
+        response = await ExamService.getCourseExams(courseId);
+      } else {
+        // Otherwise fetch all available exams for the student
+        response = await ExamService.getStudentExams();
       }
       
-      // Transform the data to match Exam interface
-      if (studentExamsData) {
-        const formattedExams: Exam[] = studentExamsData.map((exam: any) => ({
-          id: exam.id,
-          name: exam.name,
-          course_id: exam.course_id,
-          exam_date: exam.exam_date,
-          duration: exam.duration,
-          instructions: exam.instructions || "",
-          status: exam.status as "draft" | "published" | "archived",
-          created_by: exam.created_by,
-          created_at: exam.created_at,
-          updated_at: exam.updated_at,
-          course: exam.course || { name: "", code: "" }
-        }));
-        
-        setExams(formattedExams);
+      if (response && response.data) {
+        setExams(response.data);
       }
     } catch (error: any) {
       console.error("Error fetching exams:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to fetch exams",
+        title: "Error fetching exams",
+        description: error.message || "Could not load your exams. Please try again later.",
         variant: "destructive",
       });
     } finally {

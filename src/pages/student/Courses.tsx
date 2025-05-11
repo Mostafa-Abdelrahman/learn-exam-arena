@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Search, Book, Users, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import CourseService from "@/services/course.service";
 
 interface Course {
   id: string;
@@ -45,42 +45,17 @@ const StudentCourses = () => {
     try {
       setLoading(true);
       
-      // Use the get_student_courses function to fetch courses
-      const { data: studentCoursesData, error: coursesError } = await supabase
-        .rpc('get_student_courses', { student_id: currentUser.id });
+      // Fetch courses from our Laravel API
+      const response = await CourseService.getStudentCourses(currentUser.id);
       
-      if (coursesError) {
-        console.error("Error fetching student courses:", coursesError);
-        toast({
-          title: "Error fetching courses",
-          description: "Could not load your enrolled courses. Please try again later.",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-      
-      // If we have course data, process it
-      if (studentCoursesData && studentCoursesData.length > 0) {
-        // Type assertion to match the Course interface
-        const coursesWithDetails = studentCoursesData.map((course: any): Course => ({
-          id: course.id,
-          name: course.name,
-          code: course.code,
-          description: course.description || "",
-          doctors: Array.isArray(course.doctors) ? course.doctors : [],
-          exam_count: Number(course.exam_count) || 0,
-          created_at: course.created_at,
-          updated_at: course.updated_at
-        }));
-        
-        setCourses(coursesWithDetails);
+      if (response && response.data) {
+        setCourses(response.data);
       }
     } catch (error: any) {
-      console.error("Error in fetchCourses:", error);
+      console.error("Error fetching courses:", error);
       toast({
         title: "Error fetching courses",
-        description: error.message,
+        description: error.message || "Could not load your enrolled courses. Please try again later.",
         variant: "destructive",
       });
     } finally {
@@ -89,7 +64,7 @@ const StudentCourses = () => {
   };
 
   const handleViewExams = (courseId: string) => {
-    navigate("/student/exams");
+    navigate("/student/exams", { state: { courseId } });
   };
 
   const filteredCourses = courses.filter(course =>

@@ -5,7 +5,6 @@ declare interface StudentCourse {
   student_id: string;
   course_id: string;
   enrolled_at?: string;
-  created_at?: string;
   updated_at?: string;
 }
 
@@ -20,6 +19,5 @@ declare interface Course {
     name: string;
   }[];
   exam_count: number;
-  created_at?: string;
   updated_at?: string;
 }

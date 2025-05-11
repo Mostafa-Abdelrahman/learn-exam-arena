@@ -1,159 +1,131 @@
 
-import API from "./api.service";
-import { supabase } from "@/integrations/supabase/client";
+import api from '../api/config';
 
 const ExamService = {
   // Get all exams
-  getAllExams() {
-    return API.get("/exams");
+  async getAllExams() {
+    const response = await api.get('/exams');
+    return response.data;
   },
 
   // Get a specific exam
-  getExam(id: number) {
-    return API.get(`/exams/${id}`);
+  async getExam(id: string) {
+    const response = await api.get(`/exams/${id}`);
+    return response.data;
   },
 
   // Get exams for a specific course
-  getCourseExams(courseId: number) {
-    return API.get(`/courses/${courseId}/exams`);
+  async getCourseExams(courseId: string) {
+    const response = await api.get(`/courses/${courseId}/exams`);
+    return response.data;
   },
 
   // Get exams created by a specific doctor
-  getDoctorExams(doctorId: number) {
-    return API.get(`/doctors/${doctorId}/exams`);
+  async getDoctorExams(doctorId: string) {
+    const response = await api.get('/exams');
+    return response.data;
   },
 
   // Get exams available for a specific student
-  getStudentExams(studentId: number) {
-    return API.get(`/students/${studentId}/exams`);
+  async getStudentExams() {
+    const response = await api.get('/exams/available');
+    return response.data;
+  },
+  
+  // Get upcoming exams for a student
+  async getUpcomingExams() {
+    const response = await api.get('/exams/upcoming');
+    return response.data;
   },
 
   // Create a new exam (doctor only)
-  createExam(examData: any) {
-    return API.post("/exams", examData);
+  async createExam(examData: any) {
+    const response = await api.post('/exams', examData);
+    return response.data;
   },
 
   // Update an exam (doctor only)
-  updateExam(id: number, examData: any) {
-    return API.put(`/exams/${id}`, examData);
+  async updateExam(id: string, examData: any) {
+    const response = await api.put(`/exams/${id}`, examData);
+    return response.data;
   },
 
   // Delete an exam (doctor only)
-  deleteExam(id: number) {
-    return API.delete(`/exams/${id}`);
+  async deleteExam(id: string) {
+    await api.delete(`/exams/${id}`);
+    return true;
   },
 
   // Publish an exam (doctor only)
-  publishExam(id: number) {
-    return API.patch(`/exams/${id}/publish`);
+  async publishExam(id: string) {
+    const response = await api.put(`/exams/${id}/status`, { status: 'published' });
+    return response.data;
   },
 
   // Add questions to an exam (doctor only)
-  addQuestionsToExam(examId: number, questionsData: any) {
-    return API.post(`/exams/${examId}/questions`, questionsData);
+  async addQuestionToExam(examId: string, questionData: any) {
+    const response = await api.post(`/exams/${examId}/questions`, questionData);
+    return response.data;
   },
 
   // Remove a question from an exam (doctor only)
-  removeQuestionFromExam(examQuestionId: number) {
-    return API.delete(`/exam-questions/${examQuestionId}`);
+  async removeQuestionFromExam(examId: string, questionId: string) {
+    await api.delete(`/exams/${examId}/questions/${questionId}`);
+    return true;
   },
 
   // Get exam questions
-  getExamQuestions(examId: number) {
-    return API.get(`/exams/${examId}/questions`);
+  async getExamQuestions(examId: string) {
+    const response = await api.get(`/exams/${examId}`);
+    return response.data.questions || [];
   },
 
-  // Submit student exam answers
-  submitExamAnswers(examId: number, studentId: number, answersData: any) {
-    return API.post(`/exams/${examId}/submit`, { 
-      student_id: studentId,
-      answers: answersData 
-    });
+  // Start an exam for a student
+  async startExam(examId: string) {
+    const response = await api.post(`/exams/${examId}/start`);
+    return response.data;
   },
 
-  // Submit exam with Supabase
-  async submitExamWithSupabase(examId: string, studentId: string, answers: any[]) {
-    try {
-      // Check if an attempt already exists for this exam and student
-      const { data: existingAttempt, error: checkError } = await supabase
-        .from('student_exams')
-        .select('id')
-        .eq('student_id', studentId)
-        .eq('exam_id', examId)
-        .maybeSingle();
+  // Submit answer to a specific question
+  async submitAnswer(examId: string, questionId: string, answer: string) {
+    const response = await api.post(`/exams/${examId}/questions/${questionId}/answer`, { answer });
+    return response.data;
+  },
 
-      if (checkError) throw checkError;
-
-      let studentExamId;
-
-      if (existingAttempt) {
-        // Update the existing attempt
-        studentExamId = existingAttempt.id;
-        
-        const { error: updateError } = await supabase
-          .from('student_exams')
-          .update({
-            end_time: new Date().toISOString(),
-            completed: true,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', studentExamId);
-
-        if (updateError) throw updateError;
-      } else {
-        // Create a new exam attempt
-        const { data: newAttempt, error: createError } = await supabase
-          .from('student_exams')
-          .insert({
-            student_id: studentId,
-            exam_id: examId,
-            start_time: new Date().toISOString(),
-            end_time: new Date().toISOString(),
-            completed: true
-          })
-          .select('id')
-          .single();
-
-        if (createError) throw createError;
-        
-        if (newAttempt) {
-          studentExamId = newAttempt.id;
-        }
-      }
-
-      // Submit all answers
-      const formattedAnswers = answers.map(answer => ({
-        student_exam_id: studentExamId,
-        exam_question_id: answer.exam_question_id,
-        answer: answer.answer
-      }));
-
-      const { error: answersError } = await supabase
-        .from('student_exam_answers')
-        .insert(formattedAnswers);
-
-      if (answersError) throw answersError;
-
-      return { success: true, studentExamId };
-    } catch (error) {
-      console.error('Error submitting exam:', error);
-      throw error;
-    }
+  // Submit exam with all answers
+  async submitExam(examId: string, answers: any[]) {
+    const response = await api.post(`/exams/${examId}/submit`, { answers });
+    return response.data;
   },
 
   // Get student exam results
-  getStudentExamResults(studentId: number, examId: number) {
-    return API.get(`/students/${studentId}/exams/${examId}/results`);
+  async getStudentExamResults(examId: string) {
+    const response = await api.get(`/results/${examId}`);
+    return response.data;
+  },
+
+  // Get all student results
+  async getAllStudentResults() {
+    const response = await api.get('/results');
+    return response.data;
   },
 
   // Grade a written answer (doctor only)
-  gradeWrittenAnswer(studentExamAnswerId: number, gradeData: any) {
-    return API.patch(`/student-exam-answers/${studentExamAnswerId}/grade`, gradeData);
+  async gradeWrittenAnswer(answerId: string, gradeData: any) {
+    const response = await api.post(`/answers/${answerId}/grade`, gradeData);
+    return response.data;
   },
 
-  // Get all student answers for an exam (doctor only)
-  getExamStudentAnswers(examId: number) {
-    return API.get(`/exams/${examId}/student-answers`);
+  // Assign final grade to student exam (doctor only)
+  async assignFinalGrade(examId: string, studentId: string, gradeData: any) {
+    const response = await api.post(`/exams/${examId}/student/${studentId}/grade`, gradeData);
+    return response.data;
+  },
+
+  // Get exam results (doctor only)
+  async getExamResults(examId: string) {
+    const response = await api.get(`/exams/${examId}/results`);
+    return response.data;
   },
 };
 

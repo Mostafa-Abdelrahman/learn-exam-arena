@@ -1,65 +1,78 @@
 
-import API from "./api.service";
+import api from '../api/config';
 
 const CourseService = {
   // Get all courses
-  getAllCourses() {
-    return API.get("/courses");
+  async getAllCourses() {
+    const response = await api.get('/courses');
+    return response.data;
   },
 
   // Get a specific course
-  getCourse(id: number) {
-    return API.get(`/courses/${id}`);
+  async getCourse(id: string) {
+    const response = await api.get(`/courses/${id}`);
+    return response.data;
   },
 
   // Get courses for a specific student
-  getStudentCourses(studentId: number) {
-    return API.get(`/students/${studentId}/courses`);
+  async getStudentCourses(studentId: string) {
+    // For students, we use the student-focused endpoint
+    const response = await api.get('/courses');
+    return response.data;
   },
 
   // Get courses for a specific doctor
-  getDoctorCourses(doctorId: number) {
-    return API.get(`/doctors/${doctorId}/courses`);
+  async getDoctorCourses(doctorId: string) {
+    const response = await api.get('/courses');
+    return response.data;
   },
 
   // Get courses for a specific major
-  getMajorCourses(majorId: number) {
-    return API.get(`/majors/${majorId}/courses`);
+  async getMajorCourses(majorId: string) {
+    const response = await api.get(`/majors/${majorId}/courses`);
+    return response.data;
   },
 
   // Create a new course (admin only)
-  createCourse(courseData: any) {
-    return API.post("/courses", courseData);
+  async createCourse(courseData: any) {
+    const response = await api.post('/admin/courses', courseData);
+    return response.data;
   },
 
   // Update a course (admin only)
-  updateCourse(id: number, courseData: any) {
-    return API.put(`/courses/${id}`, courseData);
+  async updateCourse(id: string, courseData: any) {
+    const response = await api.put(`/admin/courses/${id}`, courseData);
+    return response.data;
   },
 
   // Delete a course (admin only)
-  deleteCourse(id: number) {
-    return API.delete(`/courses/${id}`);
+  async deleteCourse(id: string) {
+    await api.delete(`/admin/courses/${id}`);
+    return true;
   },
 
   // Assign doctor to course (admin only)
-  assignDoctorToCourse(doctorId: number, courseId: number) {
-    return API.post(`/doctor-courses`, { doctor_id: doctorId, course_id: courseId });
+  async assignDoctorToCourse(doctorId: string, courseId: string) {
+    const response = await api.post(`/admin/assignments/doctors/${doctorId}/courses/${courseId}`);
+    return response.data;
   },
 
   // Assign student to course (admin only)
-  assignStudentToCourse(studentId: number, courseId: number) {
-    return API.post(`/student-courses`, { student_id: studentId, course_id: courseId });
+  async assignStudentToCourse(studentId: string, courseId: string) {
+    const response = await api.post(`/admin/assignments/students/${studentId}/courses/${courseId}`);
+    return response.data;
   },
 
   // Remove doctor from course (admin only)
-  removeDoctorFromCourse(doctorCourseId: number) {
-    return API.delete(`/doctor-courses/${doctorCourseId}`);
+  async removeDoctorFromCourse(doctorId: string, courseId: string) {
+    await api.delete(`/admin/assignments/doctors/${doctorId}/courses/${courseId}`);
+    return true;
   },
 
   // Remove student from course (admin only)
-  removeStudentFromCourse(studentCourseId: number) {
-    return API.delete(`/student-courses/${studentCourseId}`);
+  async removeStudentFromCourse(studentId: string, courseId: string) {
+    await api.delete(`/admin/assignments/students/${studentId}/courses/${courseId}`);
+    return true;
   },
 };
 

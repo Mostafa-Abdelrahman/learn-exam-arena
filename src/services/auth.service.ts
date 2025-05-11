@@ -1,7 +1,7 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import api from '../api/config';
 
-// User types that match with Supabase
+// User types
 export interface User {
   id: string;
   name: string;
@@ -22,71 +22,64 @@ export interface RegisterData extends LoginCredentials {
 }
 
 const AuthService = {
-  // Login using Supabase
+  // Login using Laravel API
   async login(credentials: LoginCredentials) {
-    const { data, error } = await supabase.auth.signInWithPassword(credentials);
+    const response = await api.post('/login', credentials);
     
-    if (error) throw error;
+    // Store the token
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+    }
     
-    return data;
+    return response.data;
   },
 
-  // Logout using Supabase
+  // Logout using Laravel API
   async logout() {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    return true;
+    try {
+      await api.post('/logout');
+      localStorage.removeItem('token');
+      return true;
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still remove token on client side even if API call fails
+      localStorage.removeItem('token');
+      return true;
+    }
   },
 
-  // Register using Supabase
+  // Register using Laravel API
   async register(userData: RegisterData) {
-    const { data, error } = await supabase.auth.signUp({
-      email: userData.email,
-      password: userData.password,
-      options: {
-        data: {
-          name: userData.name,
-          gender: userData.gender,
-          role: userData.role,
-        },
-      },
-    });
-    
-    if (error) throw error;
-    
-    return data;
+    const response = await api.post('/register', userData);
+    return response.data;
   },
 
-  // Get current user from Supabase
+  // Get current user from Laravel API
   async getCurrentUser(): Promise<User | null> {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return null;
-    
-    // Get the user profile from profiles table
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .single();
-    
-    if (error || !data) return null;
-    
-    return {
-      id: data.id,
-      name: data.name || '',
-      email: session.user.email || '',
-      role: data.role as "admin" | "doctor" | "student",
-      gender: data.gender as "male" | "female" | "other"
-    };
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return null;
+      
+      // Make a request to get the authenticated user
+      const response = await api.get('/user');
+      return response.data;
+    } catch (error) {
+      console.error('Get current user error:', error);
+      return null;
+    }
   },
 
-  // Check if user is authenticated with Supabase
+  // Check if user is authenticated
   async isAuthenticated(): Promise<boolean> {
-    const { data: { session } } = await supabase.auth.getSession();
-    return !!session;
+    try {
+      const token = localStorage.getItem('token');
+      return !!token;
+    } catch (error) {
+      return false;
+    }
   },
 
-  // Get user role from Supabase
+  // Get user role
   async getUserRole(): Promise<string | null> {
     const user = await this.getCurrentUser();
     return user ? user.role : null;
