@@ -51,7 +51,8 @@ const AdminDashboard = () => {
     queryFn: async () => {
       try {
         const response = await UserService.getSystemStats();
-        return response.data;
+        console.log(response)
+        return response.data.data;
       } catch (error) {
         toast({
           title: "Error",
