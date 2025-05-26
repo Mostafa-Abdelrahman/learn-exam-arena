@@ -1,75 +1,89 @@
 
-import API from "./api.service";
+import API from './api.service';
 
 const UserService = {
-  // Get all users (admin only)
-  getAllUsers() {
-    return API.get("/users");
+  // Get system statistics for admin dashboard
+  async getSystemStats() {
+    const response = await API.get('/admin/stats');
+    return response;
   },
 
-  // Get a specific user
-  getUser(id: number) {
-    return API.get(`/users/${id}`);
+  // Get all users for admin
+  async getAllUsers(params?: { role?: string; page?: number; limit?: number }) {
+    const queryParams = new URLSearchParams();
+    if (params?.role) queryParams.append('role', params.role);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    
+    const response = await API.get(`/admin/users?${queryParams.toString()}`);
+    return response;
   },
 
-  // Create a new user (admin only)
-  createUser(userData: any) {
-    return API.post("/users", userData);
+  // Create new user
+  async createUser(userData: any) {
+    const response = await API.post('/admin/users', userData);
+    return response;
   },
 
-  // Update a user (admin only)
-  updateUser(id: number, userData: any) {
-    return API.put(`/users/${id}`, userData);
+  // Update user
+  async updateUser(userId: string, userData: any) {
+    const response = await API.put(`/admin/users/${userId}`, userData);
+    return response;
   },
 
-  // Delete a user (admin only)
-  deleteUser(id: number) {
-    return API.delete(`/users/${id}`);
+  // Delete user
+  async deleteUser(userId: string) {
+    const response = await API.delete(`/admin/users/${userId}`);
+    return response;
   },
 
-  // Reset user password (admin only)
-  resetUserPassword(id: number) {
-    return API.post(`/users/${id}/reset-password`);
+  // Get all courses for admin
+  async getAllCourses(params?: { page?: number; limit?: number }) {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    
+    const response = await API.get(`/admin/courses?${queryParams.toString()}`);
+    return response;
   },
 
-  // Get all students (admin only)
-  getAllStudents() {
-    return API.get("/students");
+  // Create new course
+  async createCourse(courseData: any) {
+    const response = await API.post('/admin/courses', courseData);
+    return response;
   },
 
-  // Get all doctors (admin only)
-  getAllDoctors() {
-    return API.get("/doctors");
+  // Update course
+  async updateCourse(courseId: string, courseData: any) {
+    const response = await API.put(`/admin/courses/${courseId}`, courseData);
+    return response;
   },
 
-  // Get all admins (admin only)
-  getAllAdmins() {
-    return API.get("/admins");
+  // Delete course
+  async deleteCourse(courseId: string) {
+    const response = await API.delete(`/admin/courses/${courseId}`);
+    return response;
   },
 
-  // Get student details
-  getStudent(studentId: number) {
-    return API.get(`/students/${studentId}`);
+  // Assignment routes
+  async assignDoctorToCourse(doctorId: string, courseId: string) {
+    const response = await API.post(`/admin/assignments/doctors/${doctorId}/courses/${courseId}`);
+    return response;
   },
 
-  // Get doctor details
-  getDoctor(doctorId: number) {
-    return API.get(`/doctors/${doctorId}`);
+  async removeDoctorFromCourse(doctorId: string, courseId: string) {
+    const response = await API.delete(`/admin/assignments/doctors/${doctorId}/courses/${courseId}`);
+    return response;
   },
 
-  // Create student (admin only)
-  createStudent(studentData: any) {
-    return API.post("/students", studentData);
+  async enrollStudentInCourse(studentId: string, courseId: string) {
+    const response = await API.post(`/admin/assignments/students/${studentId}/courses/${courseId}`);
+    return response;
   },
 
-  // Create doctor (admin only)
-  createDoctor(doctorData: any) {
-    return API.post("/doctors", doctorData);
-  },
-
-  // Get system statistics (admin only)
-  getSystemStats() {
-    return API.get("/stats");
+  async removeStudentFromCourse(studentId: string, courseId: string) {
+    const response = await API.delete(`/admin/assignments/students/${studentId}/courses/${courseId}`);
+    return response;
   },
 };
 

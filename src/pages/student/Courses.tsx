@@ -1,66 +1,60 @@
+
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardFooter,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Search, Book, Users, FileText } from "lucide-react";
+import {
+  Loader2,
+  Search,
+  BookOpen,
+  Users,
+  FileText,
+  Calendar,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import CourseService from "@/services/course.service";
-import { Course } from "@/types/student-courses";
 
 const StudentCourses = () => {
+  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [courses, setCourses] = useState<Course[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
-  useEffect(() => {
-    fetchCourses();
-  }, [currentUser]);
-
-  const fetchCourses = async () => {
-    if (!currentUser) return;
-
-    try {
-      setLoading(true);
-      
-      // Fetch courses from our Laravel API
-      const response = await CourseService.getStudentCourses();
-      
-      if (response && response.data) {
-        setCourses(response.data);
+  const { data: courses, isLoading } = useQuery({
+    queryKey: ["student-courses"],
+    queryFn: async () => {
+      try {
+        const response = await CourseService.getStudentCourses();
+        return response.data;
+      } catch (error: any) {
+        toast({
+          title: "Error fetching courses",
+          description: error.message || "Could not load your courses",
+          variant: "destructive",
+        });
+        return [];
       }
-    } catch (error: any) {
-      console.error("Error fetching courses:", error);
-      toast({
-        title: "Error fetching courses",
-        description: error.message || "Could not load your enrolled courses. Please try again later.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
+
+  const filteredCourses = courses?.filter(course =>
+    course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    course.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    course.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
 
   const handleViewExams = (courseId: string) => {
     navigate("/student/exams", { state: { courseId } });
   };
-
-  const filteredCourses = courses.filter(course =>
-    course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    course.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    course.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
     <div className="space-y-6 animate-in">
@@ -76,76 +70,84 @@ const StudentCourses = () => {
           />
         </div>
       </div>
-      
-      {loading ? (
+
+      {isLoading ? (
         <div className="flex justify-center py-10">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : filteredCourses.length === 0 ? (
         <Card>
           <CardContent className="p-10 text-center">
-            <Book className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+            <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">
-              {searchTerm ? "No courses match your search" : "No courses enrolled"}
+              No courses available
             </h3>
             <p className="text-muted-foreground">
-              {searchTerm 
-                ? "Try a different search term or clear your search"
-                : "You are not enrolled in any courses yet."}
+              {searchTerm
+                ? "No courses match your search."
+                : "You're not enrolled in any courses yet."}
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredCourses.map((course) => (
-            <Card key={course.id} className="overflow-hidden">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center">
-                  <span className="bg-primary/10 text-primary text-sm px-2 py-1 rounded-md mr-2">
-                    {course.code}
-                  </span>
-                  {course.name}
-                </CardTitle>
-                {course.description && (
-                  <CardDescription className="mt-2 line-clamp-2">
-                    {course.description}
-                  </CardDescription>
-                )}
+            <Card key={course.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-lg">{course.name}</CardTitle>
+                    <CardDescription className="text-sm font-medium text-primary">
+                      {course.code}
+                    </CardDescription>
+                  </div>
+                  <BookOpen className="h-5 w-5 text-muted-foreground" />
+                </div>
               </CardHeader>
-              <CardContent className="pb-3">
-                <div className="space-y-3">
-                  <div className="flex items-start">
-                    <Users className="h-4 w-4 mr-2 mt-0.5 text-muted-foreground" />
-                    <div>
-                      <div className="text-sm font-medium">Instructor{course.doctors.length !== 1 ? 's' : ''}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {course.doctors.length > 0
-                          ? course.doctors.map(doctor => doctor.name).join(", ")
-                          : "No instructors assigned"}
-                      </div>
+              <CardContent className="space-y-4">
+                {course.description && (
+                  <p className="text-sm text-muted-foreground line-clamp-3">
+                    {course.description}
+                  </p>
+                )}
+                
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-center space-x-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span>{course.exam_count || 0} Exams</span>
+                  </div>
+                  {course.doctors && course.doctors.length > 0 && (
+                    <div className="flex items-center space-x-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span>{course.doctors.length} Doctor{course.doctors.length > 1 ? 's' : ''}</span>
+                    </div>
+                  )}
+                </div>
+
+                {course.doctors && course.doctors.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-1">Instructors:</p>
+                    <div className="space-y-1">
+                      {course.doctors.map((doctor) => (
+                        <p key={doctor.id} className="text-sm text-muted-foreground">
+                          Dr. {doctor.name}
+                        </p>
+                      ))}
                     </div>
                   </div>
-                  
-                  <div className="flex items-start">
-                    <FileText className="h-4 w-4 mr-2 mt-0.5 text-muted-foreground" />
-                    <div>
-                      <div className="text-sm font-medium">Exams</div>
-                      <div className="text-sm text-muted-foreground">
-                        {course.exam_count} exam{course.exam_count !== 1 ? 's' : ''} available
-                      </div>
-                    </div>
-                  </div>
+                )}
+
+                <div className="flex space-x-2 pt-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => handleViewExams(course.id)}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    View Exams
+                  </Button>
                 </div>
               </CardContent>
-              <CardFooter className="pt-3">
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => handleViewExams(course.id)}
-                >
-                  <FileText className="h-4 w-4 mr-2" /> View Exams
-                </Button>
-              </CardFooter>
             </Card>
           ))}
         </div>

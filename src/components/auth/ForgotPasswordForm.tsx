@@ -3,9 +3,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Mail } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AuthService from "@/services/auth.service";
 
@@ -14,29 +13,37 @@ interface ForgotPasswordFormProps {
 }
 
 const ForgotPasswordForm = ({ onBackToLogin }: ForgotPasswordFormProps) => {
-  const [resetEmail, setResetEmail] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [resetSent, setResetSent] = useState(false);
   const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    
+    if (!email) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter your email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     
     try {
-      await AuthService.forgotPassword({ email: resetEmail });
-      setResetSent(true);
+      await AuthService.forgotPassword(email);
+      
+      setEmailSent(true);
       toast({
-        title: "Reset link sent",
-        description: "Please check your email for password reset instructions.",
+        title: "Reset link sent!",
+        description: "Check your email for password reset instructions",
       });
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || "Failed to send reset email. Please try again.");
+    } catch (error: any) {
       toast({
-        title: "Password reset failed",
-        description: err.response?.data?.message || err.message || "Failed to send reset email. Please try again.",
+        title: "Error",
+        description: error.message || "Failed to send reset email. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -44,74 +51,88 @@ const ForgotPasswordForm = ({ onBackToLogin }: ForgotPasswordFormProps) => {
     }
   };
 
+  if (emailSent) {
+    return (
+      <>
+        <CardHeader>
+          <CardTitle>Check Your Email</CardTitle>
+          <CardDescription>
+            We've sent a password reset link to {email}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="text-center text-sm text-muted-foreground">
+            <p>Didn't receive the email? Check your spam folder or try again.</p>
+          </div>
+          
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={onBackToLogin}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Sign In
+          </Button>
+          
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full"
+            onClick={() => {
+              setEmailSent(false);
+              setEmail("");
+            }}
+          >
+            Try Different Email
+          </Button>
+        </CardContent>
+      </>
+    );
+  }
+
   return (
-    <form onSubmit={handleForgotPassword}>
+    <>
       <CardHeader>
-        <CardTitle>Forgot Password</CardTitle>
+        <CardTitle>Reset Password</CardTitle>
         <CardDescription>
-          Enter your email to receive a password reset link
+          Enter your email address and we'll send you a reset link
         </CardDescription>
       </CardHeader>
-      
-      <CardContent className="space-y-4">
-        {error && (
-          <Alert variant="destructive">
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {resetSent ? (
-          <Alert>
-            <Mail className="h-4 w-4" />
-            <AlertTitle>Check your email</AlertTitle>
-            <AlertDescription>
-              We've sent a password reset link to your email address.
-            </AlertDescription>
-          </Alert>
-        ) : (
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="reset-email">Email</Label>
             <Input
               id="reset-email"
+              name="email"
               type="email"
-              value={resetEmail}
-              onChange={(e) => setResetEmail(e.target.value)}
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
               required
             />
           </div>
-        )}
 
-        <Button 
-          type="button" 
-          variant="link" 
-          className="p-0 h-auto text-sm"
-          onClick={onBackToLogin}
-        >
-          Back to login
-        </Button>
-      </CardContent>
-      
-      <CardFooter>
-        {!resetSent && (
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Sending reset link...
-              </>
-            ) : (
-              "Send reset link"
-            )}
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Send Reset Link
           </Button>
-        )}
-        {resetSent && (
-          <Button type="button" className="w-full" onClick={onBackToLogin}>
-            Return to login
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={onBackToLogin}
+            disabled={loading}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Sign In
           </Button>
-        )}
-      </CardFooter>
-    </form>
+        </form>
+      </CardContent>
+    </>
   );
 };
 
