@@ -1,21 +1,22 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AuthService from "@/services/auth.service";
 
 interface SignupFormProps {
-  onSuccess: () => void;
+  onSwitchToLogin: () => void;
 }
 
-const SignupForm = ({ onSuccess }: SignupFormProps) => {
+const SignupForm = ({ onSwitchToLogin }: SignupFormProps) => {
+  const navigate = useNavigate();
   const { toast } = useToast();
-  
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -24,9 +25,9 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
     role: "",
     gender: "",
   });
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +44,7 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
     if (formData.password !== formData.password_confirmation) {
       toast({
         title: "Validation Error",
-        description: "Passwords do not match",
+        description: "Passwords don't match",
         variant: "destructive",
       });
       return;
@@ -61,28 +62,21 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
     setLoading(true);
     
     try {
-      await AuthService.register(formData);
+      await AuthService.register({
+        ...formData,
+        gender: formData.gender as "male" | "female" | "other"
+      });
       
       toast({
-        title: "Account created successfully!",
-        description: "You can now sign in with your credentials",
+        title: "Registration successful!",
+        description: "Your account has been created. Please sign in.",
       });
 
-      onSuccess();
+      onSwitchToLogin();
     } catch (error: any) {
-      let errorMessage = "Registration failed. Please try again.";
-      
-      if (error.errors) {
-        // Handle validation errors from backend
-        const errorMessages = Object.values(error.errors).flat();
-        errorMessage = errorMessages[0] as string;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
       toast({
-        title: "Registration Failed",
-        description: errorMessage,
+        title: "Registration failed",
+        description: error.message || "Something went wrong. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -90,28 +84,15 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
     <>
       <CardHeader>
         <CardTitle>Create Account</CardTitle>
-        <CardDescription>
-          Sign up for a new account to get started
-        </CardDescription>
+        <CardDescription>Enter your information to create your account</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -123,7 +104,7 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
               type="text"
               placeholder="Enter your full name"
               value={formData.name}
-              onChange={handleInputChange}
+              onChange={(e) => handleInputChange("name", e.target.value)}
               disabled={loading}
               required
             />
@@ -137,7 +118,7 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
               type="email"
               placeholder="Enter your email"
               value={formData.email}
-              onChange={handleInputChange}
+              onChange={(e) => handleInputChange("email", e.target.value)}
               disabled={loading}
               required
             />
@@ -148,8 +129,7 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
               <Label htmlFor="role">Role</Label>
               <Select
                 value={formData.role}
-                onValueChange={(value) => handleSelectChange("role", value)}
-                disabled={loading}
+                onValueChange={(value) => handleInputChange("role", value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select role" />
@@ -166,8 +146,7 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
               <Label htmlFor="gender">Gender</Label>
               <Select
                 value={formData.gender}
-                onValueChange={(value) => handleSelectChange("gender", value)}
-                disabled={loading}
+                onValueChange={(value) => handleInputChange("gender", value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select gender" />
@@ -180,7 +159,7 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
               </Select>
             </div>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="signup-password">Password</Label>
             <div className="relative">
@@ -188,55 +167,45 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
                 id="signup-password"
                 name="password"
                 type={showPassword ? "text" : "password"}
-                placeholder="Create a password"
+                placeholder="Enter your password"
                 value={formData.password}
-                onChange={handleInputChange}
+                onChange={(e) => handleInputChange("password", e.target.value)}
                 disabled={loading}
                 required
               />
               <Button
                 type="button"
                 variant="ghost"
-                size="icon"
+                size="sm"
                 className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                 onClick={() => setShowPassword(!showPassword)}
-                disabled={loading}
               >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password_confirmation">Confirm Password</Label>
+            <Label htmlFor="confirm-password">Confirm Password</Label>
             <div className="relative">
               <Input
-                id="password_confirmation"
+                id="confirm-password"
                 name="password_confirmation"
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="Confirm your password"
                 value={formData.password_confirmation}
-                onChange={handleInputChange}
+                onChange={(e) => handleInputChange("password_confirmation", e.target.value)}
                 disabled={loading}
                 required
               />
               <Button
                 type="button"
                 variant="ghost"
-                size="icon"
+                size="sm"
                 className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                disabled={loading}
               >
-                {showConfirmPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
           </div>
@@ -245,6 +214,18 @@ const SignupForm = ({ onSuccess }: SignupFormProps) => {
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Create Account
           </Button>
+
+          <div className="text-center text-sm">
+            Already have an account?{" "}
+            <Button
+              type="button"
+              variant="link"
+              className="px-0 font-normal"
+              onClick={onSwitchToLogin}
+            >
+              Sign in
+            </Button>
+          </div>
         </form>
       </CardContent>
     </>
