@@ -1,119 +1,69 @@
 
-import API from "./api.service";
+import api from '../api/config';
 
-// Types for questions and exams management
-export interface Question {
+export interface DoctorCourse {
   id: string;
-  text: string;
-  type: "mcq" | "written";
-  chapter?: string;
-  difficulty?: "easy" | "medium" | "hard";
-  created_by: string;
-  evaluation_criteria?: string;
-}
-
-export interface Choice {
-  id: string;
-  question_id: string;
-  text: string;
-  is_correct: boolean;
-}
-
-export interface Exam {
-  id: string;
+  course_id?: string;
   name: string;
-  course_id: string;
-  exam_date: string;
-  duration: string;
-  instructions?: string;
-  status: "draft" | "published" | "archived";
-  created_by: string;
-  course?: {
-    name: string;
-    code: string;
-  };
-  needs_grading?: boolean;
+  course_name?: string;
+  code: string;
+  course_code?: string;
+  description?: string;
+  student_count: number;
+  exam_count?: number;
 }
 
-export interface ExamQuestion {
+export interface CourseStudent {
   id: string;
-  exam_id: string;
-  question_id: string;
-  weight: number;
-  question?: Question;
+  student_id?: string;
+  name: string;
+  email: string;
+  major?: string;
 }
 
 const DoctorService = {
-  // Questions related methods
-  getQuestions(doctorId: string) {
-    return API.get(`/doctor/questions?doctor_id=${doctorId}`);
+  // Get courses assigned to doctor
+  async getDoctorCourses(doctorId?: string): Promise<{ data: DoctorCourse[] }> {
+    const params = doctorId ? `?doctor_id=${doctorId}` : '';
+    const response = await api.get(`/doctor/courses${params}`);
+    return response.data;
   },
-  
-  createQuestion(questionData: Partial<Question>) {
-    return API.post('/doctor/questions', questionData);
+
+  // Get students in a specific course
+  async getCourseStudents(courseId: string): Promise<{ data: CourseStudent[] }> {
+    const response = await api.get(`/courses/${courseId}/students`);
+    return response.data;
   },
-  
-  updateQuestion(questionId: string, questionData: Partial<Question>) {
-    return API.put(`/doctor/questions/${questionId}`, questionData);
+
+  // Get doctor's dashboard statistics
+  async getDoctorStats(doctorId?: string): Promise<{ data: any }> {
+    const params = doctorId ? `?doctor_id=${doctorId}` : '';
+    const response = await api.get(`/doctor/stats${params}`);
+    return response.data;
   },
-  
-  deleteQuestion(questionId: string) {
-    return API.delete(`/doctor/questions/${questionId}`);
+
+  // Get all doctors (admin only)
+  async getAllDoctors(): Promise<{ data: any[] }> {
+    const response = await api.get('/admin/doctors');
+    return response.data;
   },
-  
-  // Choices related methods
-  getQuestionChoices(questionId: string) {
-    return API.get(`/doctor/questions/${questionId}/choices`);
+
+  // Create doctor (admin only)
+  async createDoctor(doctorData: any): Promise<{ data: any }> {
+    const response = await api.post('/admin/doctors', doctorData);
+    return response.data;
   },
-  
-  createChoice(questionId: string, choiceData: Partial<Choice>) {
-    return API.post(`/doctor/questions/${questionId}/choices`, choiceData);
+
+  // Update doctor (admin only)
+  async updateDoctor(doctorId: string, doctorData: any): Promise<{ data: any }> {
+    const response = await api.put(`/admin/doctors/${doctorId}`, doctorData);
+    return response.data;
   },
-  
-  updateChoice(choiceId: string, choiceData: Partial<Choice>) {
-    return API.put(`/doctor/choices/${choiceId}`, choiceData);
-  },
-  
-  deleteChoice(choiceId: string) {
-    return API.delete(`/doctor/choices/${choiceId}`);
-  },
-  
-  // Exams related methods
-  getExams(doctorId: string) {
-    return API.get(`/doctor/exams?doctor_id=${doctorId}`);
-  },
-  
-  createExam(examData: Partial<Exam>) {
-    return API.post('/doctor/exams', examData);
-  },
-  
-  updateExam(examId: string, examData: Partial<Exam>) {
-    return API.put(`/doctor/exams/${examId}`, examData);
-  },
-  
-  deleteExam(examId: string) {
-    return API.delete(`/doctor/exams/${examId}`);
-  },
-  
-  // Exam questions related methods
-  getExamQuestions(examId: string) {
-    return API.get(`/doctor/exams/${examId}/questions`);
-  },
-  
-  addQuestionToExam(examId: string, questionId: string, weight: number = 1) {
-    return API.post(`/doctor/exams/${examId}/questions`, { 
-      question_id: questionId,
-      weight
-    });
-  },
-  
-  removeQuestionFromExam(examQuestionId: string) {
-    return API.delete(`/doctor/exam-questions/${examQuestionId}`);
-  },
-  
-  // Course related methods
-  getCourses(doctorId: string) {
-    return API.get(`/doctor/courses?doctor_id=${doctorId}`);
+
+  // Delete doctor (admin only)
+  async deleteDoctor(doctorId: string): Promise<{ message: string }> {
+    const response = await api.delete(`/admin/doctors/${doctorId}`);
+    return response.data;
   }
 };
 
