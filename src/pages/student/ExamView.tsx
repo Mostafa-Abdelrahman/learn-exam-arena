@@ -159,9 +159,9 @@ const ExamView = () => {
     setIsSubmitting(true);
     
     try {
-      // Format the answers for submission
-      const formattedAnswers = Object.keys(answers).map((key) => ({
-        exam_question_id: answers[key].exam_question_id,
+      // Format the answers for submission - convert to StudentAnswer format
+      const formattedAnswers: StudentAnswer[] = Object.keys(answers).map((key) => ({
+        questionId: answers[key].question_id,
         answer: answers[key].answer || '',
       }));
       
@@ -201,7 +201,7 @@ const ExamView = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center space-y-4">
-            <h3 className="font-semibold text-lg">{exam?.exam_name}</h3>
+            <h3 className="font-semibold text-lg">{exam?.name}</h3>
             <p className="text-muted-foreground">
               Thank you for completing this exam. Your results will be available after grading.
             </p>
@@ -282,9 +282,9 @@ const ExamView = () => {
               <span className="sr-only">Back</span>
             </Button>
             <div>
-              <h1 className="text-lg font-semibold">{exam?.exam_name}</h1>
+              <h1 className="text-lg font-semibold">{exam?.name}</h1>
               <p className="text-sm text-muted-foreground">
-                {exam?.course_name} ({exam?.course_code})
+                {exam?.course?.name || exam?.course_name} ({exam?.course?.code || exam?.course_code})
               </p>
             </div>
           </div>

@@ -10,10 +10,13 @@ declare interface Exam {
   created_by: string;
   created_at?: string;
   updated_at?: string;
+  needs_grading?: boolean;
   course?: {
     name: string;
     code: string;
   };
+  course_name?: string;
+  course_code?: string;
 }
 
 declare interface ExamQuestion {
@@ -22,4 +25,9 @@ declare interface ExamQuestion {
   question_id: string;
   weight: number;
   question?: Question;
+}
+
+declare interface StudentAnswer {
+  questionId: string;
+  answer: string;
 }

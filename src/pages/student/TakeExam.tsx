@@ -39,7 +39,7 @@ import ExamService from "@/services/exam.service";
 interface ExamQuestion {
   id: string;
   text: string;
-  type: "mcq" | "written";
+  type: "mcq" | "written" | "multiple-choice";
   choices?: {
     id: string;
     text: string;
@@ -98,7 +98,19 @@ const TakeExam = () => {
       
       if (response && response.data) {
         setExam(response.data);
-        setQuestions(response.data.questions || []);
+        
+        // Transform the questions to match our local interface
+        const transformedQuestions: ExamQuestion[] = (response.data.questions || []).map((q: any) => ({
+          id: q.id || q.exam_question_id,
+          text: q.text || q.question_text,
+          type: q.type === 'multiple-choice' ? 'mcq' : q.type,
+          choices: q.choices?.map((c: any) => ({
+            id: c.id || c.choice_id,
+            text: c.text || c.choice_text
+          }))
+        }));
+        
+        setQuestions(transformedQuestions);
         setTimeRemaining(parseInt(response.data.duration) * 60); // Convert minutes to seconds
       }
     } catch (error: any) {
