@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +33,7 @@ const ForgotPasswordForm = ({ onBackToLogin }: ForgotPasswordFormProps) => {
     setLoading(true);
     
     try {
-      await AuthService.forgotPassword({ email });
+      await AuthService.forgotPassword(email);
       
       setEmailSent(true);
       toast({

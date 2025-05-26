@@ -64,6 +64,7 @@ const SignupForm = ({ onSwitchToLogin }: SignupFormProps) => {
     try {
       await AuthService.register({
         ...formData,
+        role: formData.role as "student" | "doctor" | "admin",
         gender: formData.gender as "male" | "female" | "other"
       });
       

@@ -22,12 +22,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     const checkAuth = async () => {
       try {
         // Check if user is authenticated
-        const authenticated = await AuthService.isAuthenticated();
+        const authenticated = AuthService.isAuthenticated();
         setIsAuthenticated(authenticated);
         
         if (authenticated) {
           // Get user role
-          const role = await AuthService.getUserRole();
+          const role = AuthService.getUserRole();
           setUserRole(role);
         }
       } catch (error) {
@@ -41,13 +41,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     checkAuth();
 
     // Set up event listener for auth changes
-    const handleStorageChange = async (event: StorageEvent) => {
+    const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'token') {
-        const authenticated = await AuthService.isAuthenticated();
+        const authenticated = AuthService.isAuthenticated();
         setIsAuthenticated(authenticated);
         
         if (authenticated) {
-          const role = await AuthService.getUserRole();
+          const role = AuthService.getUserRole();
           setUserRole(role);
         } else {
           setUserRole(null);

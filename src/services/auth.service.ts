@@ -97,6 +97,11 @@ const AuthService = {
     return !!this.getStoredToken();
   },
 
+  getUserRole(): string | null {
+    const user = this.getStoredUser();
+    return user?.role || null;
+  },
+
   // Profile management
   async updateProfile(userData: Partial<User>): Promise<{ data: User }> {
     const response = await api.put('/user/profile', userData);
