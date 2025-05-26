@@ -12,13 +12,15 @@ export interface Exam {
   instructions?: string;
   status: 'draft' | 'published' | 'archived';
   created_by?: string;
+  needs_grading?: boolean;
   course?: {
     name: string;
     course_name?: string;
     code: string;
     course_code?: string;
   };
-  needs_grading?: boolean;
+  course_name?: string;
+  course_code?: string;
   questions?: ExamQuestion[];
 }
 
