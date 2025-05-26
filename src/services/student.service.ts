@@ -10,6 +10,8 @@ export interface StudentCourse {
     course_name: string;
     course_code: string;
     description?: string;
+    student_count?: number;
+    exam_count?: number;
   };
 }
 
@@ -25,6 +27,7 @@ export interface Grade {
   student_id: string;
   exam_id: string;
   grade: number;
+  created_at?: string; // Add created_at property
   exam: {
     exam_name: string;
     course: {

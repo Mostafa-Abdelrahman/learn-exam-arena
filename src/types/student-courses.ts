@@ -22,6 +22,8 @@ export interface Course {
     name: string;
   }[];
   exam_count: number;
+  student_count?: number; // Add student count
+  doctor_count?: number; // Add doctor count
   updated_at?: string;
 }
 
@@ -37,6 +39,8 @@ export const mapCourseData = (courseData: any): Course => {
     description: courseData.description || "",
     doctors: courseData.doctors || [],
     exam_count: courseData.exam_count || 0,
+    student_count: courseData.student_count || 0,
+    doctor_count: courseData.doctor_count || 0,
     updated_at: courseData.updated_at
   };
 };
