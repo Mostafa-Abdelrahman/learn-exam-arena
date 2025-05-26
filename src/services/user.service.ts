@@ -1,4 +1,3 @@
-
 import API from './api.service';
 
 const UserService = {
@@ -9,32 +8,27 @@ const UserService = {
   },
 
   // Get all users for admin
-  async getAllUsers(params?: { role?: string; page?: number; limit?: number }) {
-    const queryParams = new URLSearchParams();
-    if (params?.role) queryParams.append('role', params.role);
-    if (params?.page) queryParams.append('page', params.page.toString());
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    
-    const response = await API.get(`/admin/users?${queryParams.toString()}`);
-    return response;
+  async getAllUsers(): Promise<{ data: any[] }> {
+    const response = await API.get('/admin/users');
+    return response.data;
   },
 
   // Create new user
-  async createUser(userData: any) {
+  async createUser(userData: any): Promise<{ message: string; user: any }> {
     const response = await API.post('/admin/users', userData);
-    return response;
+    return response.data;
   },
 
   // Update user
-  async updateUser(userId: string, userData: any) {
+  async updateUser(userId: string, userData: any): Promise<{ message: string }> {
     const response = await API.put(`/admin/users/${userId}`, userData);
-    return response;
+    return response.data;
   },
 
   // Delete user
-  async deleteUser(userId: string) {
+  async deleteUser(userId: string): Promise<{ message: string }> {
     const response = await API.delete(`/admin/users/${userId}`);
-    return response;
+    return response.data;
   },
 
   // Get all courses for admin

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -11,17 +11,12 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Loader2,
-  Search,
-  BookOpen,
-  Users,
-  FileText,
-  Calendar,
-} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import StudentService from "@/services/student.service";
 import CourseService from "@/services/course.service";
+import { Loader2, Search, BookOpen, Users, Calendar, FileText } from "lucide-react";
 
 const StudentCourses = () => {
   const navigate = useNavigate();
@@ -29,16 +24,17 @@ const StudentCourses = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { data: courses, isLoading } = useQuery({
-    queryKey: ["student-courses"],
+  const { data: enrolledCourses, isLoading: isLoadingEnrolled } = useQuery({
+    queryKey: ["student-courses", currentUser?.id],
     queryFn: async () => {
+      if (!currentUser) return [];
       try {
-        const response = await CourseService.getStudentCourses();
+        const response = await StudentService.getStudentCourses(currentUser.id);
         return response.data;
-      } catch (error: any) {
+      } catch (error) {
         toast({
-          title: "Error fetching courses",
-          description: error.message || "Could not load your courses",
+          title: "Error",
+          description: "Failed to fetch enrolled courses",
           variant: "destructive",
         });
         return [];
@@ -46,15 +42,56 @@ const StudentCourses = () => {
     },
   });
 
-  const filteredCourses = courses?.filter(course =>
-    course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    course.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    course.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const { data: availableCourses, isLoading: isLoadingAvailable } = useQuery({
+    queryKey: ["available-courses"],
+    queryFn: async () => {
+      try {
+        const response = await CourseService.getAllCourses();
+        return response.data;
+      } catch (error) {
+        return [];
+      }
+    },
+  });
 
   const handleViewExams = (courseId: string) => {
     navigate("/student/exams", { state: { courseId } });
   };
+
+  const handleEnrollInCourse = async (courseId: string) => {
+    if (!currentUser) return;
+
+    try {
+      await StudentService.enrollInCourse(currentUser.id, courseId);
+      toast({
+        title: "Success",
+        description: "Successfully enrolled in course",
+      });
+      // Refetch courses
+      window.location.reload();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to enroll in course",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const enrolledCourseIds = enrolledCourses?.map(ec => ec.course.course_id) || [];
+  const unenrolledCourses = availableCourses?.filter(
+    course => !enrolledCourseIds.includes(course.course_id)
+  ) || [];
+
+  const filteredEnrolledCourses = enrolledCourses?.filter(course =>
+    course.course.course_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    course.course.course_code.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
+
+  const filteredAvailableCourses = unenrolledCourses.filter(course =>
+    course.course_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    course.course_code.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-6 animate-in">
@@ -71,87 +108,144 @@ const StudentCourses = () => {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-10">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : filteredCourses.length === 0 ? (
-        <Card>
-          <CardContent className="p-10 text-center">
-            <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">
-              No courses available
-            </h3>
-            <p className="text-muted-foreground">
-              {searchTerm
-                ? "No courses match your search."
-                : "You're not enrolled in any courses yet."}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredCourses.map((course) => (
-            <Card key={course.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg">{course.name}</CardTitle>
-                    <CardDescription className="text-sm font-medium text-primary">
-                      {course.code}
-                    </CardDescription>
-                  </div>
-                  <BookOpen className="h-5 w-5 text-muted-foreground" />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {course.description && (
-                  <p className="text-sm text-muted-foreground line-clamp-3">
-                    {course.description}
-                  </p>
-                )}
-                
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center space-x-2">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span>{course.exam_count || 0} Exams</span>
-                  </div>
-                  {course.doctors && course.doctors.length > 0 && (
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span>{course.doctors.length} Doctor{course.doctors.length > 1 ? 's' : ''}</span>
+      {/* Enrolled Courses */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <BookOpen className="mr-2 h-5 w-5" />
+            Enrolled Courses
+          </CardTitle>
+          <CardDescription>
+            Courses you are currently enrolled in
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingEnrolled ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : filteredEnrolledCourses.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <BookOpen className="mx-auto h-12 w-12 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No enrolled courses</h3>
+              <p>You haven't enrolled in any courses yet.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filteredEnrolledCourses.map((enrollment) => (
+                <Card key={enrollment.student_course_id} className="hover:shadow-md transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg">{enrollment.course.course_name}</CardTitle>
+                        <CardDescription>{enrollment.course.course_code}</CardDescription>
+                      </div>
+                      <Badge variant="default">Enrolled</Badge>
                     </div>
-                  )}
-                </div>
-
-                {course.doctors && course.doctors.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium mb-1">Instructors:</p>
-                    <div className="space-y-1">
-                      {course.doctors.map((doctor) => (
-                        <p key={doctor.id} className="text-sm text-muted-foreground">
-                          Dr. {doctor.name}
-                        </p>
-                      ))}
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {enrollment.course.description && (
+                      <p className="text-sm text-muted-foreground">
+                        {enrollment.course.description}
+                      </p>
+                    )}
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                        <div className="flex items-center">
+                          <Users className="h-4 w-4 mr-1" />
+                          {enrollment.course.student_count || 0}
+                        </div>
+                        <div className="flex items-center">
+                          <FileText className="h-4 w-4 mr-1" />
+                          {enrollment.course.exam_count || 0}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )}
+                    
+                    <Button 
+                      className="w-full" 
+                      variant="outline"
+                      onClick={() => handleViewExams(enrollment.course.course_id)}
+                    >
+                      View Exams
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-                <div className="flex space-x-2 pt-2">
-                  <Button 
-                    variant="outline" 
-                    className="flex-1"
-                    onClick={() => handleViewExams(course.id)}
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    View Exams
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      {/* Available Courses */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Calendar className="mr-2 h-5 w-5" />
+            Available Courses
+          </CardTitle>
+          <CardDescription>
+            Courses available for enrollment
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingAvailable ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : filteredAvailableCourses.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Calendar className="mx-auto h-12 w-12 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No available courses</h3>
+              <p>All courses are either enrolled or no courses are available.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filteredAvailableCourses.map((course) => (
+                <Card key={course.course_id} className="hover:shadow-md transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg">{course.course_name}</CardTitle>
+                        <CardDescription>{course.course_code}</CardDescription>
+                      </div>
+                      <Badge variant="secondary">Available</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {course.description && (
+                      <p className="text-sm text-muted-foreground">
+                        {course.description}
+                      </p>
+                    )}
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                        <div className="flex items-center">
+                          <Users className="h-4 w-4 mr-1" />
+                          {course.student_count || 0}
+                        </div>
+                        <div className="flex items-center">
+                          <FileText className="h-4 w-4 mr-1" />
+                          {course.exam_count || 0}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <Button 
+                      className="w-full" 
+                      onClick={() => handleEnrollInCourse(course.course_id)}
+                    >
+                      Enroll Now
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
