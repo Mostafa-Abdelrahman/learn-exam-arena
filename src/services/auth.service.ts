@@ -69,6 +69,28 @@ const AuthService = {
     const response = await api.get('/user');
     return response.data;
   },
+
+  async isAuthenticated(): Promise<boolean> {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return false;
+      
+      // Verify token with backend
+      await this.getCurrentUser();
+      return true;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  async getUserRole(): Promise<string | null> {
+    try {
+      const user = await this.getCurrentUser();
+      return user.role;
+    } catch (error) {
+      return null;
+    }
+  },
 };
 
 export default AuthService;

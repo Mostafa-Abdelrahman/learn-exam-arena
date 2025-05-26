@@ -18,6 +18,10 @@ const Login = () => {
     setActiveTab("login");
   };
 
+  const handleSwitchToSignup = () => {
+    setActiveTab("register");
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
@@ -42,7 +46,10 @@ const Login = () => {
             </TabsList>
 
             <TabsContent value="login">
-              <LoginForm onForgotPassword={handleForgotPassword} />
+              <LoginForm 
+                onForgotPassword={handleForgotPassword} 
+                onSwitchToSignup={handleSwitchToSignup}
+              />
             </TabsContent>
 
             <TabsContent value="register">

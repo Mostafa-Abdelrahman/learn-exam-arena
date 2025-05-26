@@ -45,8 +45,8 @@ const LoginForm = ({ onForgotPassword, onSwitchToSignup }: LoginFormProps) => {
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
       
-      // Update auth context
-      login(response.user);
+      // Update auth context with credentials
+      await login({ email, password });
       
       toast({
         title: "Login successful!",

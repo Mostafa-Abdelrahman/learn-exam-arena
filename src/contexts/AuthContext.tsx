@@ -13,6 +13,7 @@ interface SignUpData extends LoginCredentials {
   name: string;
   gender: "male" | "female" | "other";
   role: "admin" | "doctor" | "student";
+  password_confirmation: string;
 }
 
 interface AuthContextType {
@@ -124,7 +125,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setError(null);
       
-      await AuthService.register(data);
+      // Transform SignUpData to RegisterData format
+      const registerData = {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        password_confirmation: data.password_confirmation,
+        role: data.role,
+        gender: data.gender,
+      };
+      
+      await AuthService.register(registerData);
       
       toast({
         title: "Registration successful",

@@ -68,7 +68,7 @@ const EditExamDialog = ({
         exam_date: new Date(examToEdit.exam_date),
         duration: examToEdit.duration,
         instructions: examToEdit.instructions || "",
-        status: examToEdit.status,
+        status: examToEdit.status === "archived" ? "draft" : examToEdit.status,
       });
     }
   }, [examToEdit]);
