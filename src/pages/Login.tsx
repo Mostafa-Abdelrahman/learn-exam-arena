@@ -53,7 +53,7 @@ const Login = () => {
             </TabsContent>
 
             <TabsContent value="register">
-              <SignupForm onSuccess={handleBackToLogin} />
+              <SignupForm onSwitchToLogin={handleBackToLogin} />
             </TabsContent>
 
             <TabsContent value="forgot">
