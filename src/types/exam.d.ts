@@ -1,4 +1,3 @@
-
 declare interface Exam {
   id: string;
   name: string;
