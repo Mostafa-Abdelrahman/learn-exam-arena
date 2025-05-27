@@ -1,47 +1,8 @@
+
 import api from '../api/config';
 
-export interface Exam {
-  id: string;
-  name: string;
-  exam_name?: string;
-  course_id: string;
-  exam_date: string;
-  duration: string;
-  exam_duration?: string;
-  instructions?: string;
-  status: 'draft' | 'published' | 'archived';
-  created_by?: string;
-  needs_grading?: boolean;
-  course?: {
-    name: string;
-    course_name?: string;
-    code: string;
-    course_code?: string;
-  };
-  course_name?: string;
-  course_code?: string;
-  questions?: ExamQuestion[];
-  submission_count?: number;
-}
-
-export interface ExamQuestion {
-  id: string;
-  exam_question_id: string;
-  question_id: string;
-  text: string;
-  question_text: string;
-  type: 'mcq' | 'written' | 'multiple-choice';
-  question_type: string;
-  weight?: number;
-  difficulty_level?: string;
-  choices?: {
-    id: string;
-    choice_id: string;
-    text: string;
-    choice_text: string;
-    is_correct?: boolean;
-  }[];
-}
+// Remove local Exam interface and use the global one from types
+// The global Exam interface already includes needs_grading property
 
 export interface StudentAnswer {
   questionId: string;

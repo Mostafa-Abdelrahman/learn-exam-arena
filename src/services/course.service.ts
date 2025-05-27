@@ -1,106 +1,73 @@
 
 import api from '../api/config';
-import { Course, mapCourseData } from '../types/student-courses';
 
-interface CoursesResponse {
-  data: Course[];
-  meta?: {
-    current_page: number;
-    last_page: number;
-    per_page: number;
-    total: number;
+export interface CourseStudent {
+  id: string;
+  name: string;
+  email: string;
+  major?: {
+    name: string;
+  };
+  enrollment: {
+    enrolled_at: string;
+    status: string;
+  };
+  grades: {
+    average: number;
+    exam_count: number;
+  };
+}
+
+export interface CourseDoctor {
+  id: string;
+  name: string;
+  email: string;
+  assignment: {
+    assigned_at: string;
+    role: string;
   };
 }
 
 const CourseService = {
   // Get all courses
-  async getAllCourses(): Promise<CoursesResponse> {
+  async getAllCourses(): Promise<{ data: Course[] }> {
     const response = await api.get('/courses');
-    return {
-      data: (response.data.data || []).map(mapCourseData),
-      meta: response.data.meta
-    };
-  },
-
-  // Get a specific course
-  async getCourse(id: string): Promise<{data: Course}> {
-    const response = await api.get(`/courses/${id}`);
-    return {
-      data: mapCourseData(response.data.data || response.data)
-    };
-  },
-
-  // Get courses for the authenticated student
-  async getStudentCourses(): Promise<CoursesResponse> {
-    const response = await api.get('/courses');
-    return {
-      data: (response.data.data || []).map(mapCourseData)
-    };
-  },
-
-  // Get courses assigned to a specific doctor
-  async getDoctorCourses(doctorId: string): Promise<CoursesResponse> {
-    const response = await api.get(`/doctor/courses?doctor_id=${doctorId}`);
-    return {
-      data: (response.data.data || []).map(mapCourseData)
-    };
-  },
-
-  // Admin course management
-  async createCourse(courseData: Partial<Course>): Promise<{ data: Course }> {
-    const response = await api.post('/admin/courses', courseData);
-    return {
-      data: mapCourseData(response.data.data)
-    };
-  },
-
-  async updateCourse(courseId: string, courseData: Partial<Course>): Promise<{ data: Course }> {
-    const response = await api.put(`/admin/courses/${courseId}`, courseData);
-    return {
-      data: mapCourseData(response.data.data)
-    };
-  },
-
-  async deleteCourse(courseId: string): Promise<{ message: string }> {
-    const response = await api.delete(`/admin/courses/${courseId}`);
     return response.data;
   },
 
-  // Course enrollment management
-  async enrollStudent(courseId: string, studentId: string): Promise<{ message: string }> {
-    const response = await api.post(`/admin/assignments/students/${studentId}/courses/${courseId}`);
+  // Get course details
+  async getCourse(courseId: string): Promise<{ data: Course }> {
+    const response = await api.get(`/courses/${courseId}`);
     return response.data;
   },
 
-  async unenrollStudent(courseId: string, studentId: string): Promise<{ message: string }> {
-    const response = await api.delete(`/admin/assignments/students/${studentId}/courses/${courseId}`);
-    return response.data;
-  },
-
-  async assignDoctor(courseId: string, doctorId: string): Promise<{ message: string }> {
-    const response = await api.post(`/admin/assignments/doctors/${doctorId}/courses/${courseId}`);
-    return response.data;
-  },
-
-  async unassignDoctor(courseId: string, doctorId: string): Promise<{ message: string }> {
-    const response = await api.delete(`/admin/assignments/doctors/${doctorId}/courses/${courseId}`);
-    return response.data;
-  },
-
-  // Get course students and doctors
-  async getCourseStudents(courseId: string): Promise<{ data: any[] }> {
+  // Get course students
+  async getCourseStudents(courseId: string): Promise<{ data: CourseStudent[] }> {
     const response = await api.get(`/courses/${courseId}/students`);
     return response.data;
   },
 
-  async getCourseDoctors(courseId: string): Promise<{ data: any[] }> {
+  // Get course doctors
+  async getCourseDoctors(courseId: string): Promise<{ data: CourseDoctor[] }> {
     const response = await api.get(`/courses/${courseId}/doctors`);
     return response.data;
   },
 
-  // Get course exams
-  async getCourseExams(courseId: string): Promise<{ data: any[] }> {
-    const response = await api.get(`/courses/${courseId}/exams`);
+  // Create course (admin only)
+  async createCourse(courseData: Partial<Course>): Promise<{ data: Course }> {
+    const response = await api.post('/admin/courses', courseData);
+    return response.data;
+  },
+
+  // Update course (admin only)
+  async updateCourse(courseId: string, courseData: Partial<Course>): Promise<{ data: Course }> {
+    const response = await api.put(`/admin/courses/${courseId}`, courseData);
+    return response.data;
+  },
+
+  // Delete course (admin only)
+  async deleteCourse(courseId: string): Promise<{ message: string }> {
+    const response = await api.delete(`/admin/courses/${courseId}`);
     return response.data;
   }
 };
