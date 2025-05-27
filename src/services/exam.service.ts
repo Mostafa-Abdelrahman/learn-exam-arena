@@ -1,4 +1,3 @@
-
 import api from '../api/config';
 
 export interface Exam {
@@ -22,6 +21,7 @@ export interface Exam {
   course_name?: string;
   course_code?: string;
   questions?: ExamQuestion[];
+  submission_count?: number;
 }
 
 export interface ExamQuestion {
