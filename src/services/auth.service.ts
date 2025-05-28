@@ -1,5 +1,5 @@
 
-import api from '../api/config';
+import ApiService from './api.service';
 
 export interface LoginCredentials {
   email: string;
@@ -23,104 +23,122 @@ export interface User {
   role: 'student' | 'doctor' | 'admin';
   gender: 'male' | 'female' | 'other';
   major_id?: string;
-  major?: {
-    id: string;
-    name: string;
-  };
+  profile?: UserProfile;
+  created_at: string;
+  updated_at: string;
+  last_login?: string;
+}
+
+export interface UserProfile {
+  bio?: string;
+  phone?: string;
+  address?: string;
+  date_of_birth?: string;
+  avatar_url?: string;
 }
 
 export interface AuthResponse {
   token: string;
   user: User;
+  expires_in: number;
 }
 
-const AuthService = {
+export interface PasswordResetRequest {
+  email: string;
+}
+
+export interface PasswordReset {
+  token: string;
+  email: string;
+  password: string;
+  password_confirmation: string;
+}
+
+class AuthService {
   // Authentication
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const response = await api.post('/login', credentials);
+    const response = await ApiService.post<AuthResponse>('/auth/login', credentials);
     
-    if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+    if (response.token) {
+      localStorage.setItem('auth_token', response.token);
+      localStorage.setItem('user_data', JSON.stringify(response.user));
     }
     
-    return response.data;
-  },
+    return response;
+  }
 
   async register(userData: RegisterData): Promise<{ message: string; user: User }> {
-    const response = await api.post('/register', userData);
-    return response.data;
-  },
+    return await ApiService.post('/auth/register', userData);
+  }
 
   async logout(): Promise<{ message: string }> {
     try {
-      const response = await api.post('/logout');
-      return response.data;
+      const response = await ApiService.post('/auth/logout');
+      return response;
     } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_data');
     }
-  },
+  }
 
+  async refreshToken(): Promise<AuthResponse> {
+    return await ApiService.post('/auth/refresh');
+  }
+
+  // Profile Management
   async getCurrentUser(): Promise<User> {
-    const response = await api.get('/user');
-    return response.data;
-  },
+    return await ApiService.get('/auth/user');
+  }
 
-  // Password reset
-  async forgotPassword(email: string): Promise<{ message: string }> {
-    const response = await api.post('/forgot-password', { email });
-    return response.data;
-  },
+  async updateProfile(profileData: Partial<UserProfile>): Promise<{ user: User }> {
+    const response = await ApiService.put('/auth/profile', profileData);
+    
+    if (response.user) {
+      localStorage.setItem('user_data', JSON.stringify(response.user));
+    }
+    
+    return response;
+  }
 
-  async resetPassword(token: string, email: string, password: string, passwordConfirmation: string): Promise<{ message: string }> {
-    const response = await api.post('/reset-password', {
-      token,
-      email,
-      password,
-      password_confirmation: passwordConfirmation
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
+    return await ApiService.put('/auth/password', {
+      current_password: currentPassword,
+      password: newPassword,
+      password_confirmation: newPassword
     });
-    return response.data;
-  },
+  }
 
-  // Token management
+  async uploadAvatar(file: File): Promise<{ avatar_url: string }> {
+    return await ApiService.upload('/auth/avatar', file);
+  }
+
+  // Password Reset
+  async forgotPassword(data: PasswordResetRequest): Promise<{ message: string }> {
+    return await ApiService.post('/auth/forgot-password', data);
+  }
+
+  async resetPassword(data: PasswordReset): Promise<{ message: string }> {
+    return await ApiService.post('/auth/reset-password', data);
+  }
+
+  // Utility methods
   getStoredToken(): string | null {
-    return localStorage.getItem('token');
-  },
+    return localStorage.getItem('auth_token');
+  }
 
   getStoredUser(): User | null {
-    const userStr = localStorage.getItem('user');
+    const userStr = localStorage.getItem('user_data');
     return userStr ? JSON.parse(userStr) : null;
-  },
+  }
 
   isAuthenticated(): boolean {
     return !!this.getStoredToken();
-  },
+  }
 
   getUserRole(): string | null {
     const user = this.getStoredUser();
     return user?.role || null;
-  },
-
-  // Profile management
-  async updateProfile(userData: Partial<User>): Promise<{ data: User }> {
-    const response = await api.put('/user/profile', userData);
-    
-    // Update stored user data
-    const updatedUser = response.data.data;
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-    
-    return response.data;
-  },
-
-  async changePassword(currentPassword: string, newPassword: string, confirmPassword: string): Promise<{ message: string }> {
-    const response = await api.put('/user/password', {
-      current_password: currentPassword,
-      password: newPassword,
-      password_confirmation: confirmPassword
-    });
-    return response.data;
   }
-};
+}
 
-export default AuthService;
+export default new AuthService();

@@ -1,11 +1,92 @@
 
-import api from '../api/config';
+import axios, { AxiosResponse } from 'axios';
 
-const API = {
-  get: (url: string) => api.get(url),
-  post: (url: string, data?: any) => api.post(url, data),
-  put: (url: string, data?: any) => api.put(url, data),
-  delete: (url: string) => api.delete(url),
-};
+// Configure base URL and timeout
+const BASE_URL = process.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const TIMEOUT = 30000;
 
-export default API;
+// Create axios instance with default configuration
+const apiClient = axios.create({
+  baseURL: BASE_URL,
+  timeout: TIMEOUT,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+  withCredentials: true,
+});
+
+// Request interceptor to add auth token
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor for error handling
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_data');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Generic API methods
+class ApiService {
+  // Generic HTTP methods
+  async get<T>(endpoint: string, params?: any): Promise<T> {
+    const response: AxiosResponse<T> = await apiClient.get(endpoint, { params });
+    return response.data;
+  }
+
+  async post<T>(endpoint: string, data?: any): Promise<T> {
+    const response: AxiosResponse<T> = await apiClient.post(endpoint, data);
+    return response.data;
+  }
+
+  async put<T>(endpoint: string, data?: any): Promise<T> {
+    const response: AxiosResponse<T> = await apiClient.put(endpoint, data);
+    return response.data;
+  }
+
+  async patch<T>(endpoint: string, data?: any): Promise<T> {
+    const response: AxiosResponse<T> = await apiClient.patch(endpoint, data);
+    return response.data;
+  }
+
+  async delete<T>(endpoint: string): Promise<T> {
+    const response: AxiosResponse<T> = await apiClient.delete(endpoint);
+    return response.data;
+  }
+
+  // File upload method
+  async upload<T>(endpoint: string, file: File, additionalData?: any): Promise<T> {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    if (additionalData) {
+      Object.keys(additionalData).forEach(key => {
+        formData.append(key, additionalData[key]);
+      });
+    }
+
+    const response: AxiosResponse<T> = await apiClient.post(endpoint, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+}
+
+export default new ApiService();

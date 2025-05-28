@@ -1,125 +1,174 @@
 
-import api from '../api/config';
+import ApiService from './api.service';
 
-// Remove local Exam interface and use the global one from types
-// The global Exam interface already includes needs_grading property
-
-export interface StudentAnswer {
-  questionId: string;
-  answer: string;
+export interface ExamFilters {
+  course_id?: string;
+  doctor_id?: string;
+  status?: 'draft' | 'published' | 'completed' | 'archived';
+  exam_date_from?: string;
+  exam_date_to?: string;
 }
 
-const ExamService = {
-  // Student exam methods
-  async getStudentExams(): Promise<{ data: Exam[] }> {
-    const response = await api.get('/exams/available');
-    return response.data;
-  },
+export interface CreateExamData {
+  name: string;
+  course_id: string;
+  exam_date: string;
+  duration: string;
+  instructions?: string;
+  status: 'draft' | 'published';
+  total_marks?: number;
+  passing_marks?: number;
+}
 
-  async getCourseExams(courseId: string): Promise<{ data: Exam[] }> {
-    const response = await api.get(`/courses/${courseId}/exams`);
-    return response.data;
-  },
+export interface UpdateExamData {
+  name?: string;
+  exam_date?: string;
+  duration?: string;
+  instructions?: string;
+  status?: 'draft' | 'published' | 'completed' | 'archived';
+  total_marks?: number;
+  passing_marks?: number;
+}
 
-  async getUpcomingExams(): Promise<{ data: Exam[] }> {
-    const response = await api.get('/exams/upcoming');
-    return response.data;
-  },
+export interface ExamSubmission {
+  exam_id: string;
+  answers: Array<{
+    question_id: string;
+    answer: string;
+    selected_choices?: string[];
+  }>;
+}
 
-  async getExam(examId: string): Promise<{ data: Exam }> {
-    const response = await api.get(`/exams/${examId}`);
-    return response.data;
-  },
+export interface ExamResult {
+  id: string;
+  student_id: string;
+  exam_id: string;
+  score: number;
+  total_marks: number;
+  percentage: number;
+  grade: string;
+  status: 'completed' | 'graded' | 'pending';
+  submitted_at: string;
+  graded_at?: string;
+  feedback?: string;
+}
 
-  async getExamQuestions(examId: string): Promise<{ data: ExamQuestion[] }> {
-    const response = await api.get(`/exams/${examId}/questions`);
-    return response.data;
-  },
+export interface GradingData {
+  student_exam_id: string;
+  score: number;
+  feedback?: string;
+  answer_grades?: Array<{
+    question_id: string;
+    score: number;
+    feedback?: string;
+  }>;
+}
 
-  async startExam(examId: string): Promise<{ data: { student_exam_id: string } }> {
-    const response = await api.post(`/exams/${examId}/start`);
-    return response.data;
-  },
+class ExamService {
+  // Exam Management (Doctor/Admin)
+  async getAllExams(filters?: ExamFilters, pagination?: PaginationParams): Promise<{
+    data: Exam[];
+    pagination: any;
+  }> {
+    const params = { ...filters, ...pagination };
+    return await ApiService.get('/exams', params);
+  }
 
-  async submitAnswer(examId: string, questionId: string, answer: string): Promise<{ message: string }> {
-    const response = await api.post(`/exams/${examId}/questions/${questionId}/answer`, {
-      answer
-    });
-    return response.data;
-  },
+  async getExamById(examId: string): Promise<{ data: Exam }> {
+    return await ApiService.get(`/exams/${examId}`);
+  }
 
-  async submitExam(examId: string, answers: StudentAnswer[]): Promise<{ message: string }> {
-    const response = await api.post(`/exams/${examId}/submit`, {
-      answers
-    });
-    return response.data;
-  },
+  async createExam(examData: CreateExamData): Promise<{ exam: Exam; message: string }> {
+    return await ApiService.post('/doctor/exams', examData);
+  }
 
-  async getAllStudentResults(): Promise<{ data: any[] }> {
-    const response = await api.get('/results');
-    return response.data;
-  },
-
-  async getExamResults(examId: string): Promise<{ data: any }> {
-    const response = await api.get(`/results/${examId}`);
-    return response.data;
-  },
-
-  // Doctor exam methods
-  async getDoctorExams(doctorId?: string): Promise<{ data: Exam[] }> {
-    const params = doctorId ? `?doctor_id=${doctorId}` : '';
-    const response = await api.get(`/doctor/exams${params}`);
-    return response.data;
-  },
-
-  async createExam(examData: Partial<Exam>): Promise<{ data: Exam }> {
-    const response = await api.post('/doctor/exams', examData);
-    return response.data;
-  },
-
-  async updateExam(examId: string, examData: Partial<Exam>): Promise<{ data: Exam }> {
-    const response = await api.put(`/doctor/exams/${examId}`, examData);
-    return response.data;
-  },
+  async updateExam(examId: string, examData: UpdateExamData): Promise<{ exam: Exam; message: string }> {
+    return await ApiService.put(`/doctor/exams/${examId}`, examData);
+  }
 
   async deleteExam(examId: string): Promise<{ message: string }> {
-    const response = await api.delete(`/doctor/exams/${examId}`);
-    return response.data;
-  },
+    return await ApiService.delete(`/doctor/exams/${examId}`);
+  }
 
-  async getExamSubmissions(examId: string): Promise<{ data: any[] }> {
-    const response = await api.get(`/exams/${examId}/submissions`);
-    return response.data;
-  },
+  async publishExam(examId: string): Promise<{ message: string }> {
+    return await ApiService.post(`/doctor/exams/${examId}/publish`);
+  }
 
-  async addQuestionToExam(examId: string, questionId: string, weight: number): Promise<{ data: any }> {
-    const response = await api.post(`/doctor/exams/${examId}/questions`, {
+  async archiveExam(examId: string): Promise<{ message: string }> {
+    return await ApiService.post(`/doctor/exams/${examId}/archive`);
+  }
+
+  // Question Management
+  async getExamQuestions(examId: string): Promise<{ data: ExamQuestion[] }> {
+    return await ApiService.get(`/exams/${examId}/questions`);
+  }
+
+  async addQuestionToExam(examId: string, questionId: string, weight?: number): Promise<{ message: string }> {
+    return await ApiService.post(`/doctor/exams/${examId}/questions`, {
       question_id: questionId,
-      weight
+      weight: weight || 1
     });
-    return response.data;
-  },
+  }
 
   async removeQuestionFromExam(examQuestionId: string): Promise<{ message: string }> {
-    const response = await api.delete(`/doctor/exam-questions/${examQuestionId}`);
-    return response.data;
-  },
-
-  async gradeAnswer(answerId: string, score: number, feedback?: string): Promise<{ message: string }> {
-    const response = await api.post(`/answers/${answerId}/grade`, {
-      score,
-      feedback
-    });
-    return response.data;
-  },
-
-  async assignFinalGrade(examId: string, studentId: string, score: number, feedback?: string): Promise<{ message: string }> {
-    const response = await api.post(`/exams/${examId}/student/${studentId}/grade`, {
-      score,
-      feedback
-    });
-    return response.data;
+    return await ApiService.delete(`/doctor/exam-questions/${examQuestionId}`);
   }
-};
 
-export default ExamService;
+  async updateQuestionWeight(examQuestionId: string, weight: number): Promise<{ message: string }> {
+    return await ApiService.put(`/doctor/exam-questions/${examQuestionId}`, { weight });
+  }
+
+  // Student Exam Operations
+  async getAvailableExams(): Promise<{ data: Exam[] }> {
+    return await ApiService.get('/student/exams/available');
+  }
+
+  async getUpcomingExams(): Promise<{ data: Exam[] }> {
+    return await ApiService.get('/student/exams/upcoming');
+  }
+
+  async startExam(examId: string): Promise<{ student_exam_id: string; questions: ExamQuestion[] }> {
+    return await ApiService.post(`/student/exams/${examId}/start`);
+  }
+
+  async submitExam(examId: string, submission: ExamSubmission): Promise<{ message: string; result_id: string }> {
+    return await ApiService.post(`/student/exams/${examId}/submit`, submission);
+  }
+
+  async saveExamProgress(examId: string, answers: any[]): Promise<{ message: string }> {
+    return await ApiService.post(`/student/exams/${examId}/save-progress`, { answers });
+  }
+
+  async getExamProgress(examId: string): Promise<{ data: any }> {
+    return await ApiService.get(`/student/exams/${examId}/progress`);
+  }
+
+  // Results and Grading
+  async getExamResults(examId: string): Promise<{ data: ExamResult[] }> {
+    return await ApiService.get(`/doctor/exams/${examId}/results`);
+  }
+
+  async getStudentResults(studentId?: string): Promise<{ data: ExamResult[] }> {
+    const endpoint = studentId ? `/admin/students/${studentId}/results` : '/student/results';
+    return await ApiService.get(endpoint);
+  }
+
+  async gradeExam(gradingData: GradingData): Promise<{ message: string }> {
+    return await ApiService.post('/doctor/grading', gradingData);
+  }
+
+  async bulkGradeExams(gradingDataList: GradingData[]): Promise<{ graded: number; errors: any[] }> {
+    return await ApiService.post('/doctor/grading/bulk', { grades: gradingDataList });
+  }
+
+  // Analytics
+  async getExamAnalytics(examId: string): Promise<{ data: any }> {
+    return await ApiService.get(`/admin/exams/${examId}/analytics`);
+  }
+
+  async getExamStats(): Promise<{ data: any }> {
+    return await ApiService.get('/admin/exams/stats');
+  }
+}
+
+export default new ExamService();

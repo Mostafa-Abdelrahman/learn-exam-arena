@@ -1,84 +1,129 @@
-import API from './api.service';
 
-const UserService = {
-  // Get system statistics for admin dashboard
-  async getSystemStats() {
-    const response = await API.get('/admin/stats');
-    return response;
-  },
+import ApiService from './api.service';
 
-  // Get all users for admin
-  async getAllUsers(): Promise<{ data: any[] }> {
-    const response = await API.get('/admin/users');
-    return response.data;
-  },
+export interface UserFilters {
+  role?: 'student' | 'doctor' | 'admin';
+  major_id?: string;
+  search?: string;
+  status?: 'active' | 'inactive' | 'suspended';
+}
 
-  // Create new user
-  async createUser(userData: any): Promise<{ message: string; user: any }> {
-    const response = await API.post('/admin/users', userData);
-    return response.data;
-  },
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
+}
 
-  // Update user
-  async updateUser(userId: string, userData: any): Promise<{ message: string }> {
-    const response = await API.put(`/admin/users/${userId}`, userData);
-    return response.data;
-  },
+export interface UserStats {
+  total_users: number;
+  active_users: number;
+  new_users_this_month: number;
+  users_by_role: {
+    students: number;
+    doctors: number;
+    admins: number;
+  };
+  users_by_major: Array<{
+    major_id: string;
+    major_name: string;
+    user_count: number;
+  }>;
+}
 
-  // Delete user
+export interface CreateUserData {
+  name: string;
+  email: string;
+  password: string;
+  role: 'student' | 'doctor' | 'admin';
+  gender: 'male' | 'female' | 'other';
+  major_id?: string;
+}
+
+export interface UpdateUserData {
+  name?: string;
+  email?: string;
+  role?: 'student' | 'doctor' | 'admin';
+  gender?: 'male' | 'female' | 'other';
+  major_id?: string;
+  status?: 'active' | 'inactive' | 'suspended';
+}
+
+class UserService {
+  // User Management
+  async getAllUsers(filters?: UserFilters, pagination?: PaginationParams): Promise<{
+    data: User[];
+    pagination: {
+      current_page: number;
+      total_pages: number;
+      total_count: number;
+      per_page: number;
+    };
+  }> {
+    const params = { ...filters, ...pagination };
+    return await ApiService.get('/admin/users', params);
+  }
+
+  async getUserById(userId: string): Promise<{ data: User }> {
+    return await ApiService.get(`/admin/users/${userId}`);
+  }
+
+  async createUser(userData: CreateUserData): Promise<{ user: User; message: string }> {
+    return await ApiService.post('/admin/users', userData);
+  }
+
+  async updateUser(userId: string, userData: UpdateUserData): Promise<{ user: User; message: string }> {
+    return await ApiService.put(`/admin/users/${userId}`, userData);
+  }
+
   async deleteUser(userId: string): Promise<{ message: string }> {
-    const response = await API.delete(`/admin/users/${userId}`);
-    return response.data;
-  },
+    return await ApiService.delete(`/admin/users/${userId}`);
+  }
 
-  // Get all courses for admin
-  async getAllCourses(params?: { page?: number; limit?: number }) {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append('page', params.page.toString());
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    
-    const response = await API.get(`/admin/courses?${queryParams.toString()}`);
-    return response;
-  },
+  async suspendUser(userId: string, reason?: string): Promise<{ message: string }> {
+    return await ApiService.post(`/admin/users/${userId}/suspend`, { reason });
+  }
 
-  // Create new course
-  async createCourse(courseData: any) {
-    const response = await API.post('/admin/courses', courseData);
-    return response;
-  },
+  async activateUser(userId: string): Promise<{ message: string }> {
+    return await ApiService.post(`/admin/users/${userId}/activate`);
+  }
 
-  // Update course
-  async updateCourse(courseId: string, courseData: any) {
-    const response = await API.put(`/admin/courses/${courseId}`, courseData);
-    return response;
-  },
+  // User Statistics
+  async getUserStats(): Promise<{ data: UserStats }> {
+    return await ApiService.get('/admin/users/stats');
+  }
 
-  // Delete course
-  async deleteCourse(courseId: string) {
-    const response = await API.delete(`/admin/courses/${courseId}`);
-    return response;
-  },
+  async getUserActivity(userId: string): Promise<{ data: any[] }> {
+    return await ApiService.get(`/admin/users/${userId}/activity`);
+  }
 
-  // Assignment routes
-  async assignDoctorToCourse(doctorId: string, courseId: string) {
-    const response = await API.post(`/admin/assignments/doctors/${doctorId}/courses/${courseId}`);
-    return response;
-  },
+  // Bulk Operations
+  async bulkCreateUsers(users: CreateUserData[]): Promise<{ created: number; errors: any[] }> {
+    return await ApiService.post('/admin/users/bulk', { users });
+  }
 
-  async removeDoctorFromCourse(doctorId: string, courseId: string) {
-    const response = await API.delete(`/admin/assignments/doctors/${doctorId}/courses/${courseId}`);
-    return response;
-  },
+  async bulkUpdateUsers(userIds: string[], updates: UpdateUserData): Promise<{ updated: number; errors: any[] }> {
+    return await ApiService.put('/admin/users/bulk', { user_ids: userIds, updates });
+  }
 
-  async enrollStudentInCourse(studentId: string, courseId: string) {
-    const response = await API.post(`/admin/assignments/students/${studentId}/courses/${courseId}`);
-    return response;
-  },
+  async bulkDeleteUsers(userIds: string[]): Promise<{ deleted: number; errors: any[] }> {
+    return await ApiService.delete('/admin/users/bulk', { user_ids: userIds });
+  }
 
-  async removeStudentFromCourse(studentId: string, courseId: string) {
-    const response = await API.delete(`/admin/assignments/students/${studentId}/courses/${courseId}`);
-    return response;
-  },
-};
+  // Import/Export
+  async exportUsers(filters?: UserFilters): Promise<Blob> {
+    const params = filters ? new URLSearchParams(filters as any).toString() : '';
+    const response = await fetch(`${ApiService['baseURL']}/admin/users/export?${params}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+      }
+    });
+    return response.blob();
+  }
 
-export default UserService;
+  async importUsers(file: File): Promise<{ imported: number; errors: any[] }> {
+    return await ApiService.upload('/admin/users/import', file);
+  }
+}
+
+export default new UserService();

@@ -2,18 +2,14 @@
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import AuthService, { User } from "@/services/auth.service";
-
-interface LoginCredentials {
-  email: string;
-  password: string;
-}
+import AuthService, { User, LoginCredentials } from "@/services/auth.service";
 
 interface SignUpData extends LoginCredentials {
   name: string;
   gender: "male" | "female" | "other";
   role: "admin" | "doctor" | "student";
   password_confirmation: string;
+  major_id?: string;
 }
 
 interface AuthContextType {
@@ -26,6 +22,7 @@ interface AuthContextType {
   signUp: (data: SignUpData) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,17 +38,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Check if user is authenticated
-        const authenticated = await AuthService.isAuthenticated();
+        setLoading(true);
+        
+        const authenticated = AuthService.isAuthenticated();
         setIsAuthenticated(authenticated);
 
         if (authenticated) {
-          // Get current user data
           const currentUser = await AuthService.getCurrentUser();
           setUser(currentUser);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Auth initialization error:', err);
+        setError(err.message);
+        setIsAuthenticated(false);
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -59,16 +59,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     initializeAuth();
 
-    // Event listener for handling changes to authentication state
-    const handleStorageChange = async (event: StorageEvent) => {
-      if (event.key === 'token') {
-        const authenticated = await AuthService.isAuthenticated();
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'auth_token') {
+        const authenticated = AuthService.isAuthenticated();
         setIsAuthenticated(authenticated);
         
-        if (authenticated) {
-          const currentUser = await AuthService.getCurrentUser();
-          setUser(currentUser);
-        } else {
+        if (!authenticated) {
           setUser(null);
         }
       }
@@ -87,9 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const response = await AuthService.login(credentials);
       
-      if (response) {
-        const currentUser = await AuthService.getCurrentUser();
-        setUser(currentUser);
+      if (response?.user) {
+        setUser(response.user);
         setIsAuthenticated(true);
         
         toast({
@@ -98,11 +93,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         
         // Redirect based on user role
-        if (currentUser?.role === "admin") {
+        const role = response.user.role;
+        if (role === "admin") {
           navigate("/admin/dashboard");
-        } else if (currentUser?.role === "doctor") {
+        } else if (role === "doctor") {
           navigate("/doctor/dashboard");
-        } else if (currentUser?.role === "student") {
+        } else if (role === "student") {
           navigate("/student/dashboard");
         } else {
           navigate("/");
@@ -125,7 +121,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setError(null);
       
-      // Transform SignUpData to RegisterData format
       const registerData = {
         name: data.name,
         email: data.email,
@@ -133,6 +128,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password_confirmation: data.password_confirmation,
         role: data.role,
         gender: data.gender,
+        major_id: data.major_id,
       };
       
       await AuthService.register(registerData);
@@ -179,16 +175,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      if (isAuthenticated) {
+        const currentUser = await AuthService.getCurrentUser();
+        setUser(currentUser);
+      }
+    } catch (err: any) {
+      console.error('Failed to refresh user:', err);
+    }
+  };
+
   const value = {
     user,
-    profile: user, // For backward compatibility
-    currentUser: user, // For backward compatibility
+    profile: user,
+    currentUser: user,
     loading,
     error,
     login,
     signUp,
     logout,
     isAuthenticated,
+    refreshUser,
   };
 
   return (
