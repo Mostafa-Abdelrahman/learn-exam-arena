@@ -14,7 +14,7 @@ export { default as StudentService } from './student.service';
 export { default as GradeService } from './grade.service';
 export { default as DoctorService } from './doctor.service';
 
-// Re-export types with proper naming
+// Re-export types with proper naming to avoid conflicts
 export type * from './auth.service';
 export type { 
   UserFilters, 
@@ -27,12 +27,14 @@ export type * from './course.service';
 export type { 
   ExamFilters,
   CreateExamData,
-  UpdateExamData,
-  ExamSubmission as ExamServiceSubmission,
-  ExamResult as ExamServiceResult,
-  GradingData
+  UpdateExamData
 } from './exam.service';
-export type * from './question.service';
+export type { 
+  QuestionFilters,
+  CreateQuestionData as QuestionServiceCreateData,
+  UpdateQuestionData as QuestionServiceUpdateData,
+  QuestionStats 
+} from './question.service';
 export type * from './scheduling.service';
 export type { SystemStats as AdminSystemStats } from './admin.service';
 export type * from './notification.service';

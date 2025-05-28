@@ -1,8 +1,8 @@
 
 import axios, { AxiosResponse } from 'axios';
 
-// Configure base URL and timeout
-const BASE_URL = process.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+// Configure base URL and timeout - use Vite's import.meta.env instead of process.env
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 const TIMEOUT = 30000;
 
 // Create axios instance with default configuration

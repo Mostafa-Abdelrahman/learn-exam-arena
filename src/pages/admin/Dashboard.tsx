@@ -1,259 +1,145 @@
-import { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Users,
-  BookOpen,
-  FileText,
-  User,
-  GraduationCap,
-  School,
-  Award,
-} from "lucide-react";
-import UserService from "@/services/user.service";
-import { useQuery } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { Skeleton } from "@/components/ui/skeleton";
-import AdminService from "@/services/admin.service";
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AdminService } from '@/services';
+import type { SystemStats } from '@/services/admin.service';
 
-const StatCard = ({ title, value, icon, description, isLoading = false }) => {
-  const Icon = icon;
-  
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <Skeleton className="h-8 w-28" />
-        ) : (
-          <div className="text-2xl font-bold">{value}</div>
-        )}
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </CardContent>
-    </Card>
-  );
-};
+interface ActivityItem {
+  id: string;
+  user: string;
+  action: string;
+  timestamp: string;
+}
 
 const AdminDashboard = () => {
-  const { toast } = useToast();
-  
-  const { data: stats, isLoading } = useQuery({
-    queryKey: ["system-stats"],
-    queryFn: async () => {
-      try {
-        const response = await UserService.getSystemStats();
-        console.log(response)
-        return response.data;
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to fetch system statistics",
-          variant: "destructive",
-        });
-        return {
-          users: { total: 0, admins: 0, doctors: 0, students: 0 },
-          courses: { total: 0 },
-          majors: { total: 0 },
-          exams: { total: 0, published: 0, draft: 0 },
-        };
-      }
-    },
-  });
-
-  // Mock data for the charts/stats if real data isn't loaded yet
-  const defaultStats = {
-    users: { total: 0, admins: 0, doctors: 0, students: 0 },
-    courses: { total: 0 },
-    majors: { total: 0 },
-    exams: { total: 0, published: 0, draft: 0 },
-  };
-
-  const data = stats || defaultStats;
-
-  const [userStats, setUserStats] = useState(null);
-  const [systemStats, setSystemStats] = useState(null);
+  const [stats, setStats] = useState<SystemStats | null>(null);
+  const [recentActivities, setRecentActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchDashboardData();
+    // Mock recent activities data
+    const mockActivities: ActivityItem[] = [
+      { id: '1', user: 'John Doe', action: 'Created a new course', timestamp: '2024-07-15 10:30' },
+      { id: '2', user: 'Jane Smith', action: 'Updated exam settings', timestamp: '2024-07-15 09:45' },
+      { id: '3', user: 'Admin', action: 'Cleared system cache', timestamp: '2024-07-14 16:20' },
+    ];
+    setRecentActivities(mockActivities);
   }, []);
 
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      
-      const [userStatsResponse, systemStatsResponse] = await Promise.all([
-        UserService.getUserStats(),
-        AdminService.getSystemStats(),
-      ]);
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const systemStats = await AdminService.getSystemStats();
+        setStats(systemStats);
+      } catch (error) {
+        console.error('Failed to fetch system stats:', error);
+      }
+    };
 
-      setUserStats(userStatsResponse.data);
-      setSystemStats(systemStatsResponse.data);
-      
-    } catch (error: any) {
-      toast({
-        title: "Error fetching dashboard data",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchStats();
+  }, []);
 
   return (
-    <div className="space-y-6 animate-in">
-      <div className="flex flex-col justify-between space-y-2 md:flex-row md:items-center md:space-y-0">
-        <h2 className="text-3xl font-bold tracking-tight">Admin Dashboard</h2>
-        <div className="flex items-center gap-2">
-          <Button variant="outline">Download Report</Button>
-          <Button>Create New User</Button>
-        </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="text-2xl font-bold">Admin Dashboard</div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.users?.total || 0}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Admins</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.users?.admins || 0}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Doctors</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.users?.doctors || 0}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Students</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.users?.students || 0}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Courses</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.courses?.total || 0}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Majors</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.majors?.total || 0}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Exams</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.exams?.total || 0}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Published Exams</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.exams?.published || 0}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Draft Exams</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.exams?.draft || 0}</div>
+          </CardContent>
+        </Card>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="overview" className="space-y-6">
-          {/* Stats Grid */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatCard
-              title="Total Users"
-              value={data.users.total}
-              icon={Users}
-              description="Total registered users"
-              isLoading={isLoading}
-            />
-            <StatCard
-              title="Total Students"
-              value={data.users.students}
-              icon={GraduationCap}
-              description="Registered students"
-              isLoading={isLoading}
-            />
-            <StatCard
-              title="Total Doctors"
-              value={data.users.doctors}
-              icon={User}
-              description="Registered doctors"
-              isLoading={isLoading}
-            />
-            <StatCard
-              title="Total Courses"
-              value={data.courses.total}
-              icon={BookOpen}
-              description="Available courses"
-              isLoading={isLoading}
-            />
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatCard
-              title="Total Majors"
-              value={data.majors.total}
-              icon={School}
-              description="Academic majors"
-              isLoading={isLoading}
-            />
-            <StatCard
-              title="Total Exams"
-              value={data.exams.total}
-              icon={FileText}
-              description="All exams"
-              isLoading={isLoading}
-            />
-            <StatCard
-              title="Published Exams"
-              value={data.exams.published}
-              icon={Award}
-              description="Active exams"
-              isLoading={isLoading}
-            />
-            <StatCard
-              title="Draft Exams"
-              value={data.exams.draft}
-              icon={FileText}
-              description="Unpublished exams"
-              isLoading={isLoading}
-            />
-          </div>
-
-          {/* Recent Activity */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>
-                Latest actions performed in the system
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-2">
-                  {Array(5).fill(0).map((_, i) => (
-                    <div key={i} className="flex items-center space-x-4">
-                      <Skeleton className="h-12 w-12 rounded-full" />
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-[250px]" />
-                        <Skeleton className="h-4 w-[200px]" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center text-muted-foreground py-6">
-                  No recent activity to display
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="analytics">
-          <Card>
-            <CardHeader>
-              <CardTitle>Usage Analytics</CardTitle>
-              <CardDescription>
-                System usage and performance metrics
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center text-muted-foreground py-6">
-                Analytics data will be displayed here
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="reports">
-          <Card>
-            <CardHeader>
-              <CardTitle>System Reports</CardTitle>
-              <CardDescription>
-                Generate and view system reports
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center text-muted-foreground py-6">
-                Report generation tools will be displayed here
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {/* Recent Activities */}
+      <div>
+        <div className="text-lg font-semibold mb-2">Recent Activities</div>
+        <ul>
+          {recentActivities.map((activity) => (
+            <li key={activity.id} className="py-2 border-b">
+              <span className="font-medium">{activity.user}</span> {activity.action} -{' '}
+              <span className="text-gray-500">{activity.timestamp}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 };

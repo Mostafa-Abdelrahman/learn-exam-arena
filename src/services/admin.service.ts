@@ -1,4 +1,3 @@
-
 import ApiService from './api.service';
 
 export interface SystemStats {
@@ -39,8 +38,9 @@ class AdminService {
     return await ApiService.put('/admin/settings', settings);
   }
 
-  async getSystemStats(): Promise<{ data: SystemStats }> {
-    return await ApiService.get('/admin/system/stats');
+  async getSystemStats(): Promise<SystemStats> {
+    const response = await ApiService.get<{ data: SystemStats }>('/admin/system/stats');
+    return response.data;
   }
 
   async getAdminStats(): Promise<{ data: AdminStats }> {
