@@ -24,7 +24,14 @@ export type {
   UpdateUserData 
 } from './user.service';
 export type * from './course.service';
-export type * from './exam.service';
+export type { 
+  ExamFilters,
+  CreateExamData,
+  UpdateExamData,
+  ExamSubmission as ExamServiceSubmission,
+  ExamResult as ExamServiceResult,
+  GradingData
+} from './exam.service';
 export type * from './question.service';
 export type * from './scheduling.service';
 export type { SystemStats as AdminSystemStats } from './admin.service';

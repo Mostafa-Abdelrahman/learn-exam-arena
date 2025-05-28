@@ -53,7 +53,7 @@ const AdminDashboard = () => {
       try {
         const response = await UserService.getSystemStats();
         console.log(response)
-        return response.data.data;
+        return response.data;
       } catch (error) {
         toast({
           title: "Error",

@@ -56,6 +56,7 @@ const StudentGrades = () => {
     ? Math.round(grades.reduce((sum, grade) => sum + grade.score, 0) / grades.length)
     : 0;
 
+  const totalExams = grades?.length || 0;
   const passedExams = grades?.filter(grade => grade.score >= 60).length || 0;
 
   const getGradeBadgeVariant = (score: number) => {

@@ -60,7 +60,16 @@ const StudentResults = () => {
       const response = await ExamService.getStudentResults();
       
       if (response && response.data) {
-        setResults(response.data);
+        // Map the response data to match our interface
+        const mappedResults: ExamResult[] = response.data.map((result: any) => ({
+          exam_id: result.exam_id || result.id,
+          exam_name: result.exam_name || result.exam?.name || 'Unknown Exam',
+          course_name: result.course_name || result.exam?.course?.name || 'Unknown Course',
+          score: result.score || 0,
+          status: result.status || 'completed',
+          submitted_at: result.submitted_at || new Date().toISOString(),
+        }));
+        setResults(mappedResults);
       }
     } catch (error: any) {
       console.error("Error fetching results:", error);
