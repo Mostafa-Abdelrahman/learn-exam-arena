@@ -1,4 +1,3 @@
-
 import ApiService from './api.service';
 
 export interface LoginCredentials {
@@ -13,7 +12,6 @@ export interface RegisterData {
   password_confirmation: string;
   role: 'student' | 'doctor' | 'admin';
   gender: 'male' | 'female' | 'other';
-  major_id?: string;
 }
 
 export interface User {
@@ -22,7 +20,6 @@ export interface User {
   email: string;
   role: 'student' | 'doctor' | 'admin';
   gender: 'male' | 'female' | 'other';
-  major_id?: string;
   profile?: UserProfile;
   created_at: string;
   updated_at: string;

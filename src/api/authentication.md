@@ -29,7 +29,6 @@ Authenticate user and receive access token.
     "email": "user@example.com",
     "role": "student|doctor|admin",
     "gender": "male|female|other",
-    "major_id": "uuid",
     "created_at": "2024-01-01T00:00:00Z",
     "updated_at": "2024-01-01T00:00:00Z"
   },
@@ -50,8 +49,7 @@ Register a new user account.
   "password": "password123",
   "password_confirmation": "password123",
   "role": "student|doctor|admin",
-  "gender": "male|female|other",
-  "major_id": "uuid"
+  "gender": "male|female|other"
 }
 ```
 
@@ -64,8 +62,7 @@ Register a new user account.
     "name": "John Doe",
     "email": "john@example.com",
     "role": "student",
-    "gender": "male",
-    "major_id": "uuid"
+    "gender": "male"
   }
 }
 ```
@@ -95,7 +92,6 @@ Register a new user account.
   "email": "user@example.com",
   "role": "student|doctor|admin",
   "gender": "male|female|other",
-  "major_id": "uuid",
   "profile": {
     "bio": "User bio",
     "phone": "+1234567890",

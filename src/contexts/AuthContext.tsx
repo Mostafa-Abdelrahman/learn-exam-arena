@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -9,7 +8,6 @@ interface SignUpData extends LoginCredentials {
   gender: "male" | "female" | "other";
   role: "admin" | "doctor" | "student";
   password_confirmation: string;
-  major_id?: string;
 }
 
 interface AuthContextType {
@@ -128,7 +126,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password_confirmation: data.password_confirmation,
         role: data.role,
         gender: data.gender,
-        major_id: data.major_id,
       };
       
       await AuthService.register(registerData);
