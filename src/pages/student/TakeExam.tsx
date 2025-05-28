@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -94,7 +93,7 @@ const TakeExam = () => {
 
     try {
       setLoading(true);
-      const response = await ExamService.getExam(examId);
+      const response = await ExamService.getExamById(examId);
       
       if (response && response.data) {
         setExam(response.data);
@@ -132,9 +131,23 @@ const TakeExam = () => {
     try {
       const response = await ExamService.startExam(examId);
       
-      if (response && response.data) {
-        setStudentExamId(response.data.student_exam_id);
+      if (response) {
+        setStudentExamId(response.student_exam_id);
         setExamStarted(true);
+        
+        // Update questions if returned from start exam
+        if (response.questions) {
+          const transformedQuestions: ExamQuestion[] = response.questions.map((q: any) => ({
+            id: q.id || q.exam_question_id,
+            text: q.text || q.question_text,
+            type: q.type === 'multiple-choice' ? 'mcq' : q.type,
+            choices: q.choices?.map((c: any) => ({
+              id: c.id || c.choice_id,
+              text: c.text || c.choice_text
+            }))
+          }));
+          setQuestions(transformedQuestions);
+        }
         
         toast({
           title: "Exam started",

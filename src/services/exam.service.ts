@@ -78,6 +78,10 @@ class ExamService {
     return await ApiService.get(`/exams/${examId}`);
   }
 
+  async getExam(examId: string): Promise<{ data: Exam }> {
+    return await ApiService.get(`/exams/${examId}`);
+  }
+
   async createExam(examData: CreateExamData): Promise<{ exam: Exam; message: string }> {
     return await ApiService.post('/doctor/exams', examData);
   }
@@ -127,12 +131,31 @@ class ExamService {
     return await ApiService.get('/student/exams/upcoming');
   }
 
+  async getStudentExams(): Promise<{ data: Exam[] }> {
+    return await ApiService.get('/student/exams');
+  }
+
+  async getCourseExams(courseId: string): Promise<{ data: Exam[] }> {
+    return await ApiService.get(`/courses/${courseId}/exams`);
+  }
+
   async startExam(examId: string): Promise<{ student_exam_id: string; questions: ExamQuestion[] }> {
     return await ApiService.post(`/student/exams/${examId}/start`);
   }
 
-  async submitExam(examId: string, submission: ExamSubmission): Promise<{ message: string; result_id: string }> {
+  async submitExam(examId: string, answers: any[]): Promise<{ message: string; result_id: string }> {
+    const submission: ExamSubmission = {
+      exam_id: examId,
+      answers: answers.map(answer => ({
+        question_id: answer.questionId,
+        answer: answer.answer
+      }))
+    };
     return await ApiService.post(`/student/exams/${examId}/submit`, submission);
+  }
+
+  async submitAnswer(examId: string, questionId: string, answer: string): Promise<{ message: string }> {
+    return await ApiService.post(`/student/exams/${examId}/questions/${questionId}/answer`, { answer });
   }
 
   async saveExamProgress(examId: string, answers: any[]): Promise<{ message: string }> {

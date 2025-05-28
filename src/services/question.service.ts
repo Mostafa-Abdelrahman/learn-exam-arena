@@ -2,53 +2,58 @@
 import ApiService from './api.service';
 
 export interface QuestionFilters {
-  type?: 'mcq' | 'written' | 'true_false' | 'fill_blank';
-  difficulty?: 'easy' | 'medium' | 'hard';
-  chapter?: string;
   course_id?: string;
-  created_by?: string;
+  type?: 'mcq' | 'written' | 'multiple-choice';
+  difficulty?: 'easy' | 'medium' | 'hard';
+  search?: string;
 }
 
 export interface CreateQuestionData {
   text: string;
-  type: 'mcq' | 'written' | 'true_false' | 'fill_blank';
-  difficulty: 'easy' | 'medium' | 'hard';
-  chapter?: string;
+  type: 'mcq' | 'written' | 'multiple-choice';
   course_id?: string;
-  evaluation_criteria?: string;
-  marks: number;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  marks?: number;
   choices?: Array<{
     text: string;
     is_correct: boolean;
   }>;
+  correct_answer?: string;
+  explanation?: string;
 }
 
 export interface UpdateQuestionData {
   text?: string;
-  type?: 'mcq' | 'written' | 'true_false' | 'fill_blank';
+  type?: 'mcq' | 'written' | 'multiple-choice';
+  course_id?: string;
   difficulty?: 'easy' | 'medium' | 'hard';
-  chapter?: string;
-  evaluation_criteria?: string;
   marks?: number;
+  choices?: Array<{
+    id?: string;
+    text: string;
+    is_correct: boolean;
+  }>;
+  correct_answer?: string;
+  explanation?: string;
 }
 
 export interface QuestionStats {
   total_questions: number;
-  by_type: {
+  questions_by_type: {
     mcq: number;
     written: number;
-    true_false: number;
-    fill_blank: number;
+    multiple_choice: number;
   };
-  by_difficulty: {
+  questions_by_difficulty: {
     easy: number;
     medium: number;
     hard: number;
   };
-  usage_stats: {
-    most_used: Question[];
-    least_used: Question[];
-  };
+  questions_by_course: Array<{
+    course_id: string;
+    course_name: string;
+    question_count: number;
+  }>;
 }
 
 class QuestionService {
@@ -77,47 +82,25 @@ class QuestionService {
     return await ApiService.delete(`/doctor/questions/${questionId}`);
   }
 
-  async duplicateQuestion(questionId: string): Promise<{ question: Question; message: string }> {
-    return await ApiService.post(`/doctor/questions/${questionId}/duplicate`);
+  // Course Questions
+  async getCourseQuestions(courseId: string): Promise<{ data: Question[] }> {
+    return await ApiService.get(`/courses/${courseId}/questions`);
   }
 
-  // Choice Management
-  async getQuestionChoices(questionId: string): Promise<{ data: Choice[] }> {
-    return await ApiService.get(`/questions/${questionId}/choices`);
+  async getDoctorQuestions(doctorId?: string): Promise<{ data: Question[] }> {
+    const endpoint = doctorId ? `/doctors/${doctorId}/questions` : '/doctor/questions';
+    return await ApiService.get(endpoint);
   }
 
-  async addChoice(questionId: string, choiceData: {
-    text: string;
-    is_correct: boolean;
-  }): Promise<{ choice: Choice; message: string }> {
-    return await ApiService.post(`/doctor/questions/${questionId}/choices`, choiceData);
-  }
-
-  async updateChoice(choiceId: string, choiceData: {
-    text?: string;
-    is_correct?: boolean;
-  }): Promise<{ choice: Choice; message: string }> {
-    return await ApiService.put(`/doctor/choices/${choiceId}`, choiceData);
-  }
-
-  async deleteChoice(choiceId: string): Promise<{ message: string }> {
-    return await ApiService.delete(`/doctor/choices/${choiceId}`);
-  }
-
-  // Question Bank
-  async getQuestionBank(courseId?: string): Promise<{ data: Question[] }> {
-    const params = courseId ? { course_id: courseId } : {};
-    return await ApiService.get('/doctor/question-bank', params);
-  }
-
+  // Question Bank Management
   async importQuestions(file: File, courseId?: string): Promise<{ imported: number; errors: any[] }> {
-    const additionalData = courseId ? { course_id: courseId } : {};
+    const additionalData = courseId ? { course_id: courseId } : undefined;
     return await ApiService.upload('/doctor/questions/import', file, additionalData);
   }
 
   async exportQuestions(filters?: QuestionFilters): Promise<Blob> {
     const params = filters ? new URLSearchParams(filters as any).toString() : '';
-    const response = await fetch(`${ApiService['baseURL']}/doctor/questions/export?${params}`, {
+    const response = await fetch(`${process.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/doctor/questions/export?${params}`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
       }
@@ -125,27 +108,17 @@ class QuestionService {
     return response.blob();
   }
 
-  // Question Templates
-  async getQuestionTemplates(): Promise<{ data: any[] }> {
-    return await ApiService.get('/doctor/question-templates');
-  }
-
-  async createQuestionFromTemplate(templateId: string, data: any): Promise<{ question: Question; message: string }> {
-    return await ApiService.post(`/doctor/question-templates/${templateId}/create`, data);
+  async duplicateQuestion(questionId: string, newCourseId?: string): Promise<{ question: Question; message: string }> {
+    return await ApiService.post(`/doctor/questions/${questionId}/duplicate`, { course_id: newCourseId });
   }
 
   // Bulk Operations
-  async bulkUpdateQuestions(questionIds: string[], updates: UpdateQuestionData): Promise<{ updated: number; errors: any[] }> {
-    return await ApiService.put('/doctor/questions/bulk', {
-      question_ids: questionIds,
-      updates
-    });
+  async bulkDeleteQuestions(questionIds: string[]): Promise<{ deleted: number; errors: any[] }> {
+    return await ApiService.post('/doctor/questions/bulk/delete', { question_ids: questionIds });
   }
 
-  async bulkDeleteQuestions(questionIds: string[]): Promise<{ deleted: number; errors: any[] }> {
-    return await ApiService.delete('/doctor/questions/bulk', {
-      question_ids: questionIds
-    });
+  async bulkUpdateQuestions(questionIds: string[], updates: Partial<UpdateQuestionData>): Promise<{ updated: number; errors: any[] }> {
+    return await ApiService.put('/doctor/questions/bulk', { question_ids: questionIds, updates });
   }
 
   // Statistics
@@ -153,20 +126,23 @@ class QuestionService {
     return await ApiService.get('/admin/questions/stats');
   }
 
-  async getQuestionUsage(questionId: string): Promise<{ data: any }> {
-    return await ApiService.get(`/admin/questions/${questionId}/usage`);
+  async getQuestionAnalytics(questionId: string): Promise<{ data: any }> {
+    return await ApiService.get(`/admin/questions/${questionId}/analytics`);
   }
 
-  // Search and Recommendations
-  async searchQuestions(query: string, filters?: QuestionFilters): Promise<{ data: Question[] }> {
-    return await ApiService.get('/questions/search', { q: query, ...filters });
+  // Question Validation
+  async validateQuestion(questionData: CreateQuestionData | UpdateQuestionData): Promise<{ valid: boolean; errors: string[] }> {
+    return await ApiService.post('/doctor/questions/validate', questionData);
   }
 
-  async getRecommendedQuestions(courseId: string, examType?: string): Promise<{ data: Question[] }> {
-    return await ApiService.get('/doctor/questions/recommendations', {
-      course_id: courseId,
-      exam_type: examType
-    });
+  // Random Question Generation
+  async getRandomQuestions(filters: {
+    course_id?: string;
+    type?: string;
+    difficulty?: string;
+    count: number;
+  }): Promise<{ data: Question[] }> {
+    return await ApiService.get('/questions/random', filters);
   }
 }
 

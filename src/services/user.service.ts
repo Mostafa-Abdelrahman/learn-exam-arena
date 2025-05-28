@@ -31,6 +31,13 @@ export interface UserStats {
   }>;
 }
 
+export interface SystemStats {
+  total_users: number;
+  total_courses: number;
+  total_exams: number;
+  recent_activity: any[];
+}
+
 export interface CreateUserData {
   name: string;
   email: string;
@@ -93,6 +100,10 @@ class UserService {
     return await ApiService.get('/admin/users/stats');
   }
 
+  async getSystemStats(): Promise<{ data: SystemStats }> {
+    return await ApiService.get('/admin/system/stats');
+  }
+
   async getUserActivity(userId: string): Promise<{ data: any[] }> {
     return await ApiService.get(`/admin/users/${userId}/activity`);
   }
@@ -107,13 +118,13 @@ class UserService {
   }
 
   async bulkDeleteUsers(userIds: string[]): Promise<{ deleted: number; errors: any[] }> {
-    return await ApiService.delete('/admin/users/bulk', { user_ids: userIds });
+    return await ApiService.post('/admin/users/bulk/delete', { user_ids: userIds });
   }
 
   // Import/Export
   async exportUsers(filters?: UserFilters): Promise<Blob> {
     const params = filters ? new URLSearchParams(filters as any).toString() : '';
-    const response = await fetch(`${ApiService['baseURL']}/admin/users/export?${params}`, {
+    const response = await fetch(`${process.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/admin/users/export?${params}`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
       }

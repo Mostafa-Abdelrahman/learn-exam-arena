@@ -22,7 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarIcon, Plus, Trash2, Loader2 } from "lucide-react";
 import { format } from "date-fns";
-import { Question, ExamQuestion } from "@/services/doctor.service";
+import { QuestionService } from "@/services";
 import { ExamFormData } from "./AddExamDialog";
 
 interface EditExamDialogProps {

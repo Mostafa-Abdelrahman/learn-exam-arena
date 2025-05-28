@@ -74,7 +74,7 @@ class AuthService {
   async logout(): Promise<{ message: string }> {
     try {
       const response = await ApiService.post('/auth/logout');
-      return response;
+      return response || { message: 'Logged out successfully' };
     } finally {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user_data');
@@ -91,7 +91,7 @@ class AuthService {
   }
 
   async updateProfile(profileData: Partial<UserProfile>): Promise<{ user: User }> {
-    const response = await ApiService.put('/auth/profile', profileData);
+    const response = await ApiService.put<{ user: User }>('/auth/profile', profileData);
     
     if (response.user) {
       localStorage.setItem('user_data', JSON.stringify(response.user));

@@ -57,7 +57,7 @@ const StudentResults = () => {
 
     try {
       setIsLoading(true);
-      const response = await ExamService.getAllStudentResults();
+      const response = await ExamService.getStudentResults();
       
       if (response && response.data) {
         setResults(response.data);
