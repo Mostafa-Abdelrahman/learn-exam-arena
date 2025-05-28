@@ -7,7 +7,6 @@ import { useToast } from "@/hooks/use-toast";
 import ExamCard from "@/components/exams/ExamCard";
 import AddExamDialog, { ExamFormData } from "@/components/exams/AddExamDialog";
 import EditExamDialog from "@/components/exams/EditExamDialog";
-import { Exam } from "@/types";
 
 const DoctorExams = () => {
   const { currentUser } = useAuth();

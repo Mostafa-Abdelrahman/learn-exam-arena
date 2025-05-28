@@ -1,10 +1,12 @@
 
 declare interface Grade {
-  id: string;
+  grade_id: string;
+  id?: string;
   student_id: string;
   exam_id: string;
   course_id?: string;
-  score: number;
+  grade: number;
+  score?: number;
   max_score?: number;
   percentage?: number;
   grade_letter?: string;
@@ -17,9 +19,17 @@ declare interface Grade {
     id: string;
     name: string;
   };
-  exam?: {
+  exam: {
     id: string;
-    name: string;
+    exam_name: string;
+    name?: string;
+    course: {
+      id: string;
+      course_name: string;
+      course_code: string;
+      name?: string;
+      code?: string;
+    };
   };
   course?: {
     id: string;
