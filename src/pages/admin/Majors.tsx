@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,7 +43,7 @@ const AdminMajors = () => {
   });
 
   const filteredMajors = majors?.filter(major =>
-    major.major_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    major.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (major.description && major.description.toLowerCase().includes(searchTerm.toLowerCase()))
   ) || [];
 
@@ -95,11 +94,11 @@ const AdminMajors = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredMajors.map((major) => (
-                    <TableRow key={major.major_id}>
-                      <TableCell className="font-medium">{major.major_name}</TableCell>
+                    <TableRow key={major.id}>
+                      <TableCell className="font-medium">{major.name}</TableCell>
                       <TableCell>{major.description || "No description"}</TableCell>
-                      <TableCell>{major.student_count || 0}</TableCell>
-                      <TableCell>{major.doctor_count || 0}</TableCell>
+                      <TableCell>0</TableCell>
+                      <TableCell>0</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button variant="outline" size="sm">

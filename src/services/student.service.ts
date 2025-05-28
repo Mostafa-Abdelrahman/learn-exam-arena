@@ -17,8 +17,20 @@ export interface StudentGrade {
   created_at: string;
 }
 
+export interface StudentCourse {
+  student_course_id: string;
+  course: {
+    course_id: string;
+    course_name: string;
+    course_code: string;
+    description?: string;
+    student_count?: number;
+    exam_count?: number;
+  };
+}
+
 class StudentService {
-  async getStudentCourses(studentId?: string): Promise<{ data: Course[] }> {
+  async getStudentCourses(studentId?: string): Promise<{ data: StudentCourse[] }> {
     const endpoint = studentId ? `/admin/students/${studentId}/courses` : '/student/courses';
     return await ApiService.get(endpoint);
   }

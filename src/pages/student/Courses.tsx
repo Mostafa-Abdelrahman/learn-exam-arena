@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,7 +28,7 @@ const StudentCourses = () => {
     queryFn: async () => {
       if (!currentUser) return [];
       try {
-        const response = await StudentService.getStudentCourses(currentUser.id);
+        const response = await StudentService.getStudentCourses();
         return response.data;
       } catch (error) {
         toast({
@@ -62,7 +61,7 @@ const StudentCourses = () => {
     if (!currentUser) return;
 
     try {
-      await StudentService.enrollInCourse(currentUser.id, courseId);
+      await StudentService.enrollInCourse(courseId);
       toast({
         title: "Success",
         description: "Successfully enrolled in course",

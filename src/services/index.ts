@@ -9,13 +9,27 @@ export { default as QuestionService } from './question.service';
 export { default as SchedulingService } from './scheduling.service';
 export { default as AdminService } from './admin.service';
 export { default as NotificationService } from './notification.service';
+export { default as MajorService } from './major.service';
+export { default as StudentService } from './student.service';
+export { default as GradeService } from './grade.service';
+export { default as DoctorService } from './doctor.service';
 
-// Re-export types
+// Re-export types with proper naming
 export type * from './auth.service';
-export type * from './user.service';
+export type { 
+  UserFilters, 
+  PaginationParams, 
+  UserStats as UserServiceStats,
+  CreateUserData, 
+  UpdateUserData 
+} from './user.service';
 export type * from './course.service';
 export type * from './exam.service';
 export type * from './question.service';
 export type * from './scheduling.service';
-export type * from './admin.service';
+export type { SystemStats as AdminSystemStats } from './admin.service';
 export type * from './notification.service';
+export type * from './major.service';
+export type * from './student.service';
+export type * from './grade.service';
+export type * from './doctor.service';

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -48,31 +47,30 @@ const StudentGrades = () => {
   });
 
   const filteredGrades = grades?.filter(grade =>
-    grade.exam.exam_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    grade.exam.course.course_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    grade.exam.course.course_code.toLowerCase().includes(searchTerm.toLowerCase())
+    grade.exam.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    grade.exam.course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    grade.exam.course.code.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
   const averageGrade = grades && grades.length > 0
-    ? Math.round(grades.reduce((sum, grade) => sum + grade.grade, 0) / grades.length)
+    ? Math.round(grades.reduce((sum, grade) => sum + grade.score, 0) / grades.length)
     : 0;
 
-  const passedExams = grades?.filter(grade => grade.grade >= 60).length || 0;
-  const totalExams = grades?.length || 0;
+  const passedExams = grades?.filter(grade => grade.score >= 60).length || 0;
 
-  const getGradeBadgeVariant = (grade: number) => {
-    if (grade >= 90) return "default";
-    if (grade >= 80) return "secondary";
-    if (grade >= 70) return "outline";
-    if (grade >= 60) return "outline";
+  const getGradeBadgeVariant = (score: number) => {
+    if (score >= 90) return "default";
+    if (score >= 80) return "secondary";
+    if (score >= 70) return "outline";
+    if (score >= 60) return "outline";
     return "destructive";
   };
 
-  const getGradeLabel = (grade: number) => {
-    if (grade >= 90) return "Excellent";
-    if (grade >= 80) return "Very Good";
-    if (grade >= 70) return "Good";
-    if (grade >= 60) return "Pass";
+  const getGradeLabel = (score: number) => {
+    if (score >= 90) return "Excellent";
+    if (score >= 80) return "Very Good";
+    if (score >= 70) return "Good";
+    if (score >= 60) return "Pass";
     return "Fail";
   };
 
@@ -183,19 +181,19 @@ const StudentGrades = () => {
                   {filteredGrades.map((gradeEntry) => (
                     <TableRow key={gradeEntry.grade_id}>
                       <TableCell className="font-medium">
-                        {gradeEntry.exam.exam_name}
+                        {gradeEntry.exam.name}
                       </TableCell>
                       <TableCell>
-                        {gradeEntry.exam.course.course_name} ({gradeEntry.exam.course.course_code})
+                        {gradeEntry.exam.course.name} ({gradeEntry.exam.course.code})
                       </TableCell>
                       <TableCell>
                         <div className="text-lg font-bold">
-                          {gradeEntry.grade}%
+                          {gradeEntry.score}%
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getGradeBadgeVariant(gradeEntry.grade)}>
-                          {getGradeLabel(gradeEntry.grade)}
+                        <Badge variant={getGradeBadgeVariant(gradeEntry.score)}>
+                          {getGradeLabel(gradeEntry.score)}
                         </Badge>
                       </TableCell>
                       <TableCell>

@@ -21,6 +21,7 @@ import UserService from "@/services/user.service";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import AdminService from "@/services/admin.service";
 
 const StatCard = ({ title, value, icon, description, isLoading = false }) => {
   const Icon = icon;
@@ -78,6 +79,37 @@ const AdminDashboard = () => {
   };
 
   const data = stats || defaultStats;
+
+  const [userStats, setUserStats] = useState(null);
+  const [systemStats, setSystemStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      const [userStatsResponse, systemStatsResponse] = await Promise.all([
+        UserService.getUserStats(),
+        AdminService.getSystemStats(),
+      ]);
+
+      setUserStats(userStatsResponse.data);
+      setSystemStats(systemStatsResponse.data);
+      
+    } catch (error: any) {
+      toast({
+        title: "Error fetching dashboard data",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6 animate-in">

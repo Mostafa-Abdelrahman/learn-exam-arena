@@ -75,6 +75,9 @@ class AuthService {
     try {
       const response = await ApiService.post('/auth/logout');
       return response || { message: 'Logged out successfully' };
+    } catch (error) {
+      // Even if logout fails on server, clear local storage
+      return { message: 'Logged out successfully' };
     } finally {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user_data');
