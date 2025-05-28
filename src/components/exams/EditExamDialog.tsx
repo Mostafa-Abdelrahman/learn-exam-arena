@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -23,7 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarIcon, Plus, Trash2, Loader2 } from "lucide-react";
 import { format } from "date-fns";
-import { Exam, Question, ExamQuestion } from "@/services/doctor.service";
+import { Question, ExamQuestion } from "@/services/doctor.service";
 import { ExamFormData } from "./AddExamDialog";
 
 interface EditExamDialogProps {

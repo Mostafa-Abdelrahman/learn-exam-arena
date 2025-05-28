@@ -80,7 +80,7 @@ const StudentCourses = () => {
 
   const enrolledCourseIds = enrolledCourses?.map(ec => ec.course.course_id) || [];
   const unenrolledCourses = availableCourses?.filter(
-    course => !enrolledCourseIds.includes(course.course_id)
+    course => !enrolledCourseIds.includes(course.id)
   ) || [];
 
   const filteredEnrolledCourses = enrolledCourses?.filter(course =>
@@ -89,8 +89,8 @@ const StudentCourses = () => {
   ) || [];
 
   const filteredAvailableCourses = unenrolledCourses.filter(course =>
-    course.course_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    course.course_code.toLowerCase().includes(searchTerm.toLowerCase())
+    course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    course.code.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -203,12 +203,12 @@ const StudentCourses = () => {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredAvailableCourses.map((course) => (
-                <Card key={course.course_id} className="hover:shadow-md transition-shadow">
+                <Card key={course.id} className="hover:shadow-md transition-shadow">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle className="text-lg">{course.course_name}</CardTitle>
-                        <CardDescription>{course.course_code}</CardDescription>
+                        <CardTitle className="text-lg">{course.name}</CardTitle>
+                        <CardDescription>{course.code}</CardDescription>
                       </div>
                       <Badge variant="secondary">Available</Badge>
                     </div>
@@ -235,7 +235,7 @@ const StudentCourses = () => {
                     
                     <Button 
                       className="w-full" 
-                      onClick={() => handleEnrollInCourse(course.course_id)}
+                      onClick={() => handleEnrollInCourse(course.id)}
                     >
                       Enroll Now
                     </Button>

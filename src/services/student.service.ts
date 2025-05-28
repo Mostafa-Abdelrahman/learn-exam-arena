@@ -19,10 +19,19 @@ export interface StudentStats {
 }
 
 export interface CourseEnrollment {
+  student_course_id: string;
   student_id: string;
   course_id: string;
   enrolled_at: string;
   status: string;
+  course: {
+    course_id: string;
+    course_name: string;
+    course_code: string;
+    description?: string;
+    student_count?: number;
+    exam_count?: number;
+  };
 }
 
 const StudentService = {
@@ -33,7 +42,7 @@ const StudentService = {
   },
 
   // Course Management
-  async getStudentCourses(): Promise<{ data: Course[] }> {
+  async getStudentCourses(studentId?: string): Promise<{ data: CourseEnrollment[] }> {
     const response = await api.get('/courses');
     return response.data;
   },
@@ -47,6 +56,11 @@ const StudentService = {
 
   // Grades
   async getStudentGrades(studentId: string): Promise<{ data: Grade[] }> {
+    const response = await api.get(`/students/${studentId}/grades`);
+    return response.data;
+  },
+
+  async getGrades(studentId: string): Promise<{ data: Grade[] }> {
     const response = await api.get(`/students/${studentId}/grades`);
     return response.data;
   },

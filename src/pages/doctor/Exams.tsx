@@ -1,13 +1,13 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import DoctorService, { Exam, ExamQuestion, Question } from "@/services/doctor.service";
+import DoctorService, { ExamQuestion, Question } from "@/services/doctor.service";
 import { Button } from "@/components/ui/button";
 import { Loader2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ExamCard from "@/components/exams/ExamCard";
 import AddExamDialog, { ExamFormData } from "@/components/exams/AddExamDialog";
 import EditExamDialog from "@/components/exams/EditExamDialog";
+import { Exam } from "@/types";
 
 const DoctorExams = () => {
   const { currentUser } = useAuth();

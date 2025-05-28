@@ -1,9 +1,8 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
-import { Exam } from "@/services/doctor.service";
+import { Exam } from "@/types/exam";
 
 interface ExamCardProps {
   exam: Exam;

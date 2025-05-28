@@ -34,7 +34,7 @@ const StudentGrades = () => {
     queryFn: async () => {
       if (!currentUser) return [];
       try {
-        const response = await StudentService.getGrades(currentUser.id);
+        const response = await StudentService.getStudentGrades(currentUser.id);
         return response.data;
       } catch (error) {
         toast({
