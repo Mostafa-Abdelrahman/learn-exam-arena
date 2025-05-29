@@ -63,7 +63,12 @@ class ExamService {
 
   // Get exam by ID (alias)
   async getExamById(examId: string): Promise<Exam> {
-    return this.getExam(examId);
+    try {
+      return await ApiService.get(`/exams/${examId}`);
+    } catch (error) {
+      console.warn('API getExamById failed, using dummy data:', error);
+      return dummyExams.find(exam => exam.id === examId) || dummyExams[0];
+    }
   }
 
   // Get student exams
@@ -135,7 +140,30 @@ class ExamService {
       return await ApiService.get(`/exams/${examId}/questions`);
     } catch (error) {
       console.warn('API getExamQuestions failed, using dummy data:', error);
-      return { data: [] };
+      return { 
+        data: [
+          {
+            exam_question_id: "eq-1",
+            question_id: "q-1",
+            question_text: "What is the capital of France?",
+            question_type: "multiple-choice",
+            difficulty_level: "easy",
+            choices: [
+              { choice_id: "c1", choice_text: "London" },
+              { choice_id: "c2", choice_text: "Paris" },
+              { choice_id: "c3", choice_text: "Berlin" },
+              { choice_id: "c4", choice_text: "Madrid" }
+            ]
+          },
+          {
+            exam_question_id: "eq-2",
+            question_id: "q-2",
+            question_text: "Explain the concept of object-oriented programming.",
+            question_type: "written",
+            difficulty_level: "medium"
+          }
+        ]
+      };
     }
   }
 
@@ -145,10 +173,30 @@ class ExamService {
       return await ApiService.post(`/student/exams/${examId}/start`);
     } catch (error) {
       console.warn('API startExam failed, using dummy response:', error);
+      const questions = [
+        {
+          id: "eq-1",
+          text: "What is the capital of France?",
+          type: "mcq",
+          choices: [
+            { id: "c1", text: "London" },
+            { id: "c2", text: "Paris" },
+            { id: "c3", text: "Berlin" },
+            { id: "c4", text: "Madrid" }
+          ]
+        },
+        {
+          id: "eq-2",
+          text: "Explain the concept of object-oriented programming.",
+          type: "written"
+        }
+      ];
+      
       return { 
         message: 'Exam started successfully',
         session_id: `session-${Date.now()}`,
-        student_exam_id: `student_exam-${Date.now()}`
+        student_exam_id: `student_exam-${Date.now()}`,
+        questions
       };
     }
   }
@@ -172,7 +220,36 @@ class ExamService {
       return await ApiService.get(`/student/exams/${examId}/take`);
     } catch (error) {
       console.warn('API takeExam failed, using dummy data:', error);
-      return dummyExams.find(exam => exam.id === examId) || dummyExams[0];
+      const exam = dummyExams.find(exam => exam.id === examId) || dummyExams[0];
+      return {
+        ...exam,
+        questions: [
+          {
+            id: "eq-1",
+            exam_question_id: "eq-1",
+            question_id: "q-1",
+            text: "What is the capital of France?",
+            question_text: "What is the capital of France?",
+            type: "mcq",
+            question_type: "multiple-choice",
+            choices: [
+              { id: "c1", choice_id: "c1", text: "London", choice_text: "London" },
+              { id: "c2", choice_id: "c2", text: "Paris", choice_text: "Paris" },
+              { id: "c3", choice_id: "c3", text: "Berlin", choice_text: "Berlin" },
+              { id: "c4", choice_id: "c4", text: "Madrid", choice_text: "Madrid" }
+            ]
+          },
+          {
+            id: "eq-2",
+            exam_question_id: "eq-2",
+            question_id: "q-2",
+            text: "Explain the concept of object-oriented programming.",
+            question_text: "Explain the concept of object-oriented programming.",
+            type: "written",
+            question_type: "written"
+          }
+        ]
+      };
     }
   }
 
