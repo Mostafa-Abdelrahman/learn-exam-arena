@@ -4,8 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { CourseService, ExamService, NotificationService } from "@/services";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Calendar, GraduationCap, Bell } from "lucide-react";
+import { BookOpen, Calendar, GraduationCap, Bell, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface DashboardStats {
   enrolled_courses: number;
@@ -16,9 +17,11 @@ interface DashboardStats {
 }
 
 const StudentDashboard = () => {
+  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState<DashboardStats>({
     enrolled_courses: 0,
     upcoming_exams: 0,
@@ -33,9 +36,13 @@ const StudentDashboard = () => {
     fetchDashboardData();
   }, []);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (showRefreshingState = false) => {
     try {
-      setLoading(true);
+      if (showRefreshingState) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       
       const [coursesResponse, upcomingExamsResponse, notificationsResponse, unreadCountResponse] = await Promise.all([
         CourseService.getStudentCourses(),
@@ -63,7 +70,20 @@ const StudentDashboard = () => {
       });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    fetchDashboardData(true);
+    toast({
+      title: "Dashboard Refreshed",
+      description: "All data has been updated",
+    });
+  };
+
+  const handleViewExamDetails = (examId: string) => {
+    navigate(`/student/exams/${examId}`);
   };
 
   const statsCards = [
@@ -72,24 +92,28 @@ const StudentDashboard = () => {
       value: stats.enrolled_courses,
       icon: BookOpen,
       color: "text-blue-600",
+      onClick: () => navigate("/student/courses"),
     },
     {
       title: "Upcoming Exams",
       value: stats.upcoming_exams,
       icon: Calendar,
       color: "text-orange-600",
+      onClick: () => navigate("/student/exams"),
     },
     {
       title: "Completed Exams",
       value: stats.completed_exams,
       icon: GraduationCap,
       color: "text-green-600",
+      onClick: () => navigate("/student/results"),
     },
     {
       title: "Unread Notifications",
       value: stats.unread_notifications,
       icon: Bell,
       color: "text-purple-600",
+      onClick: () => navigate("/student/notifications"),
     },
   ];
 
@@ -107,12 +131,16 @@ const StudentDashboard = () => {
         <h2 className="text-3xl font-bold tracking-tight">
           Welcome back, {currentUser?.name}!
         </h2>
+        <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
+          <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statsCards.map((stat) => (
-          <Card key={stat.title}>
+          <Card key={stat.title} className="hover:shadow-md transition-shadow cursor-pointer" onClick={stat.onClick}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 {stat.title}
@@ -142,7 +170,7 @@ const StudentDashboard = () => {
                       {exam.course?.name} - {new Date(exam.exam_date).toLocaleDateString()}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => handleViewExamDetails(exam.id)}>
                     View Details
                   </Button>
                 </div>

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,19 +12,32 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import StudentService from "@/services/student.service";
 import CourseService from "@/services/course.service";
-import { Loader2, Search, BookOpen, Users, Calendar, FileText } from "lucide-react";
+import { Loader2, Search, BookOpen, Users, Calendar, FileText, LogOut, RefreshCw } from "lucide-react";
 
 const StudentCourses = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
+  const [unenrollingCourseId, setUnenrollingCourseId] = useState<string | null>(null);
 
-  const { data: enrolledCourses, isLoading: isLoadingEnrolled } = useQuery({
+  const { data: enrolledCourses, isLoading: isLoadingEnrolled, refetch: refetchEnrolled } = useQuery({
     queryKey: ["student-courses", currentUser?.id],
     queryFn: async () => {
       if (!currentUser) return [];
@@ -41,7 +55,7 @@ const StudentCourses = () => {
     },
   });
 
-  const { data: availableCourses, isLoading: isLoadingAvailable } = useQuery({
+  const { data: availableCourses, isLoading: isLoadingAvailable, refetch: refetchAvailable } = useQuery({
     queryKey: ["available-courses"],
     queryFn: async () => {
       try {
@@ -66,8 +80,9 @@ const StudentCourses = () => {
         title: "Success",
         description: "Successfully enrolled in course",
       });
-      // Refetch courses
-      window.location.reload();
+      
+      // Refetch both queries to update the UI
+      await Promise.all([refetchEnrolled(), refetchAvailable()]);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -75,6 +90,38 @@ const StudentCourses = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleUnenrollFromCourse = async (courseId: string) => {
+    if (!currentUser) return;
+
+    try {
+      setUnenrollingCourseId(courseId);
+      await CourseService.unenrollFromCourse(courseId);
+      toast({
+        title: "Success",
+        description: "Successfully unenrolled from course",
+      });
+      
+      // Refetch both queries to update the UI
+      await Promise.all([refetchEnrolled(), refetchAvailable()]);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to unenroll from course",
+        variant: "destructive",
+      });
+    } finally {
+      setUnenrollingCourseId(null);
+    }
+  };
+
+  const handleRefresh = async () => {
+    await Promise.all([refetchEnrolled(), refetchAvailable()]);
+    toast({
+      title: "Refreshed",
+      description: "Course data has been updated",
+    });
   };
 
   const enrolledCourseIds = enrolledCourses?.map(ec => ec.course.course_id) || [];
@@ -96,14 +143,20 @@ const StudentCourses = () => {
     <div className="space-y-6 animate-in">
       <div className="flex flex-col justify-between space-y-2 md:flex-row md:items-center md:space-y-0">
         <h2 className="text-3xl font-bold tracking-tight">My Courses</h2>
-        <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search courses..."
-            className="pl-8 w-[250px]"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleRefresh}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search courses..."
+              className="pl-8 w-[250px]"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
       </div>
 
@@ -162,13 +215,49 @@ const StudentCourses = () => {
                       </div>
                     </div>
                     
-                    <Button 
-                      className="w-full" 
-                      variant="outline"
-                      onClick={() => handleViewExams(enrollment.course.course_id)}
-                    >
-                      View Exams
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        className="flex-1" 
+                        variant="outline"
+                        onClick={() => handleViewExams(enrollment.course.course_id)}
+                      >
+                        View Exams
+                      </Button>
+                      
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            disabled={unenrollingCourseId === enrollment.course.course_id}
+                          >
+                            {unenrollingCourseId === enrollment.course.course_id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <LogOut className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Unenroll from Course</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to unenroll from "{enrollment.course.course_name}"? 
+                              This action cannot be undone and you will lose access to all course materials and exams.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleUnenrollFromCourse(enrollment.course.course_id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Unenroll
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -223,7 +312,7 @@ const StudentCourses = () => {
                       <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                         <div className="flex items-center">
                           <Users className="h-4 w-4 mr-1" />
-                          {course.student_count || 0}
+                          {course.enrolled_students || 0}
                         </div>
                         <div className="flex items-center">
                           <FileText className="h-4 w-4 mr-1" />
