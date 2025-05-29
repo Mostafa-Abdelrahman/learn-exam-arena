@@ -44,8 +44,8 @@ const AdminCourses = () => {
   });
 
   const filteredCourses = courses?.filter(course =>
-    course.course_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    course.course_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    course.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (course.description && course.description.toLowerCase().includes(searchTerm.toLowerCase()))
   ) || [];
 
@@ -97,9 +97,9 @@ const AdminCourses = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredCourses.map((course) => (
-                    <TableRow key={course.course_id}>
-                      <TableCell className="font-medium">{course.course_code}</TableCell>
-                      <TableCell>{course.course_name}</TableCell>
+                    <TableRow key={course.id}>
+                      <TableCell className="font-medium">{course.code}</TableCell>
+                      <TableCell>{course.name}</TableCell>
                       <TableCell>{course.description || "No description"}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -107,7 +107,7 @@ const AdminCourses = () => {
                           {course.student_count || 0}
                         </div>
                       </TableCell>
-                      <TableCell>{course.doctor_count || 0}</TableCell>
+                      <TableCell>{course.enrolled_students || 0}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button variant="outline" size="sm">

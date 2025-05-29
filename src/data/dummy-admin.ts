@@ -1,24 +1,21 @@
 
 export const dummySystemStats = {
-  total_users: 1250,
-  total_students: 1000,
-  total_doctors: 45,
-  total_admins: 5,
-  total_courses: 120,
-  total_exams: 450,
-  active_exams: 25,
-  completed_exams: 380,
-  system_health: {
-    status: "healthy" as const,
-    uptime: "99.8%",
-    response_time: 145,
-    error_rate: 0.02,
-    services: {
-      database: "up" as const,
-      cache: "up" as const,
-      storage: "up" as const,
-      email: "up" as const
-    }
+  users: {
+    total: 1250,
+    admins: 5,
+    doctors: 45,
+    students: 1000
+  },
+  courses: {
+    total: 120
+  },
+  majors: {
+    total: 15
+  },
+  exams: {
+    total: 450,
+    published: 380,
+    draft: 45
   }
 };
 

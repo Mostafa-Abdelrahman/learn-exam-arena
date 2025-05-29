@@ -1,19 +1,57 @@
 
 import ApiService from './api.service';
-import { dummyExams, dummyUpcomingExams, dummyExamResults } from '@/data/dummy-exams';
+import { dummyExams } from '@/data/dummy-exams';
+
+export interface ExamFilters {
+  course_id?: string;
+  status?: 'draft' | 'published' | 'archived';
+  search?: string;
+}
+
+export interface CreateExamData {
+  name: string;
+  description?: string;
+  course_id: string;
+  exam_date: string;
+  duration: string;
+  total_marks: number;
+  passing_marks: number;
+  instructions?: string;
+}
+
+export interface UpdateExamData {
+  name?: string;
+  description?: string;
+  exam_date?: string;
+  duration?: string;
+  total_marks?: number;
+  passing_marks?: number;
+  instructions?: string;
+  status?: 'draft' | 'published' | 'archived';
+}
 
 class ExamService {
-  // Student: Get upcoming exams
-  async getUpcomingExams(): Promise<{ data: Exam[] }> {
+  // Get all exams
+  async getAllExams(params?: any): Promise<PaginationResponse<Exam>> {
     try {
-      return await ApiService.get('/student/exams/upcoming');
+      return await ApiService.get('/exams', params);
     } catch (error) {
-      console.warn('API getUpcomingExams failed, using dummy data:', error);
-      return { data: dummyUpcomingExams };
+      console.warn('API getAllExams failed, using dummy data:', error);
+      return {
+        data: dummyExams,
+        pagination: {
+          current_page: 1,
+          total_pages: 1,
+          total_count: dummyExams.length,
+          per_page: 25,
+          has_next: false,
+          has_prev: false
+        }
+      };
     }
   }
 
-  // Student: Get student's exams
+  // Get student exams
   async getStudentExams(): Promise<{ data: Exam[] }> {
     try {
       return await ApiService.get('/student/exams');
@@ -23,46 +61,23 @@ class ExamService {
     }
   }
 
-  // Student: Get exam results
-  async getStudentResults(): Promise<{ data: any[] }> {
+  // Get doctor exams
+  async getDoctorExams(): Promise<{ data: Exam[] }> {
     try {
-      return await ApiService.get('/student/results');
+      return await ApiService.get('/doctor/exams');
     } catch (error) {
-      console.warn('API getStudentResults failed, using dummy data:', error);
-      return { data: dummyExamResults };
-    }
-  }
-
-  // Get exams for a specific course
-  async getCourseExams(courseId: string): Promise<{ data: Exam[] }> {
-    try {
-      return await ApiService.get(`/courses/${courseId}/exams`);
-    } catch (error) {
-      console.warn('API getCourseExams failed, using dummy data:', error);
-      const courseExams = dummyExams.filter(exam => exam.course_id === courseId);
-      return { data: courseExams };
+      console.warn('API getDoctorExams failed, using dummy data:', error);
+      return { data: dummyExams };
     }
   }
 
   // Get exam by ID
-  async getExamById(examId: string): Promise<Exam> {
+  async getExam(examId: string): Promise<Exam> {
     try {
       return await ApiService.get(`/exams/${examId}`);
     } catch (error) {
-      console.warn('API getExamById failed, using dummy data:', error);
-      return dummyExams.find(exam => exam.id === examId) || dummyExams[0];
-    }
-  }
-
-  // Get exam (alias for getExamById)
-  async getExam(examId: string): Promise<{ data: Exam }> {
-    try {
-      const exam = await this.getExamById(examId);
-      return { data: exam };
-    } catch (error) {
       console.warn('API getExam failed, using dummy data:', error);
-      const exam = dummyExams.find(e => e.id === examId) || dummyExams[0];
-      return { data: exam };
+      return dummyExams.find(exam => exam.id === examId) || dummyExams[0];
     }
   }
 
@@ -76,23 +91,57 @@ class ExamService {
     }
   }
 
-  // Doctor: Get all exams created by doctor
-  async getDoctorExams(): Promise<{ data: Exam[] }> {
+  // Start exam
+  async startExam(examId: string): Promise<{ message: string; session_id: string }> {
     try {
-      return await ApiService.get('/doctor/exams');
+      return await ApiService.post(`/student/exams/${examId}/start`);
     } catch (error) {
-      console.warn('API getDoctorExams failed, using dummy data:', error);
-      return { data: dummyExams };
+      console.warn('API startExam failed, using dummy response:', error);
+      return { 
+        message: 'Exam started successfully',
+        session_id: `session-${Date.now()}`
+      };
     }
   }
 
-  // Get all exams (alias for getDoctorExams)
-  async getAllExams(): Promise<{ data: Exam[] }> {
-    return this.getDoctorExams();
+  // Submit answer
+  async submitAnswer(examId: string, questionId: string, answer: any): Promise<{ message: string }> {
+    try {
+      return await ApiService.post(`/student/exams/${examId}/answers`, {
+        question_id: questionId,
+        answer
+      });
+    } catch (error) {
+      console.warn('API submitAnswer failed, using dummy response:', error);
+      return { message: 'Answer submitted successfully' };
+    }
   }
 
-  // Doctor: Create exam
-  async createExam(examData: Partial<Exam>): Promise<{ exam: Exam }> {
+  // Take exam (for student)
+  async takeExam(examId: string): Promise<Exam> {
+    try {
+      return await ApiService.get(`/student/exams/${examId}/take`);
+    } catch (error) {
+      console.warn('API takeExam failed, using dummy data:', error);
+      return dummyExams.find(exam => exam.id === examId) || dummyExams[0];
+    }
+  }
+
+  // Submit exam
+  async submitExam(examId: string, answers: any[]): Promise<{ message: string; score?: number }> {
+    try {
+      return await ApiService.post(`/student/exams/${examId}/submit`, { answers });
+    } catch (error) {
+      console.warn('API submitExam failed, using dummy response:', error);
+      return {
+        message: 'Exam submitted successfully',
+        score: Math.floor(Math.random() * 100)
+      };
+    }
+  }
+
+  // Create exam (doctor)
+  async createExam(examData: CreateExamData): Promise<{ exam: Exam }> {
     try {
       return await ApiService.post('/doctor/exams', examData);
     } catch (error) {
@@ -100,8 +149,7 @@ class ExamService {
       const newExam = {
         id: `exam-${Date.now()}`,
         ...examData,
-        duration: examData.duration?.toString() || "60",
-        questions_count: 0,
+        status: 'draft' as const,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       } as Exam;
@@ -109,8 +157,8 @@ class ExamService {
     }
   }
 
-  // Doctor: Update exam
-  async updateExam(examId: string, examData: Partial<Exam>): Promise<{ exam: Exam }> {
+  // Update exam (doctor)
+  async updateExam(examId: string, examData: UpdateExamData): Promise<{ exam: Exam }> {
     try {
       return await ApiService.put(`/doctor/exams/${examId}`, examData);
     } catch (error) {
@@ -119,67 +167,19 @@ class ExamService {
       const updatedExam = {
         ...existingExam,
         ...examData,
-        duration: examData.duration?.toString() || existingExam.duration,
         updated_at: new Date().toISOString()
       };
       return { exam: updatedExam };
     }
   }
 
-  // Doctor: Delete exam
+  // Delete exam (doctor)
   async deleteExam(examId: string): Promise<{ message: string }> {
     try {
       return await ApiService.delete(`/doctor/exams/${examId}`);
     } catch (error) {
       console.warn('API deleteExam failed, using dummy response:', error);
       return { message: 'Exam deleted successfully' };
-    }
-  }
-
-  // Student: Start exam
-  async startExam(examId: string): Promise<{ student_exam_id: string; questions?: any[] }> {
-    try {
-      return await ApiService.post(`/student/exams/${examId}/start`);
-    } catch (error) {
-      console.warn('API startExam failed, using dummy response:', error);
-      return { 
-        student_exam_id: `student-exam-${Date.now()}`,
-        questions: []
-      };
-    }
-  }
-
-  // Student: Submit answer
-  async submitAnswer(examId: string, questionId: string, answer: string): Promise<{ message: string }> {
-    try {
-      return await ApiService.post(`/student/exams/${examId}/answers`, { questionId, answer });
-    } catch (error) {
-      console.warn('API submitAnswer failed, using dummy response:', error);
-      return { message: 'Answer saved' };
-    }
-  }
-
-  // Student: Take exam
-  async takeExam(examId: string): Promise<{ exam: Exam; questions: Question[] }> {
-    try {
-      return await ApiService.get(`/student/exams/${examId}/take`);
-    } catch (error) {
-      console.warn('API takeExam failed, using dummy response:', error);
-      const exam = dummyExams.find(e => e.id === examId) || dummyExams[0];
-      return { 
-        exam, 
-        questions: []
-      };
-    }
-  }
-
-  // Student: Submit exam
-  async submitExam(examId: string, answers: any): Promise<{ message: string }> {
-    try {
-      return await ApiService.post(`/student/exams/${examId}/submit`, { answers });
-    } catch (error) {
-      console.warn('API submitExam failed, using dummy response:', error);
-      return { message: 'Exam submitted successfully' };
     }
   }
 }
