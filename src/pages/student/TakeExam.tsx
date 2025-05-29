@@ -132,7 +132,7 @@ const TakeExam = () => {
       const response = await ExamService.startExam(examId);
       
       if (response) {
-        setStudentExamId(response.student_exam_id);
+        setStudentExamId(response.student_exam_id || response.session_id);
         setExamStarted(true);
         
         // Update questions if returned from start exam

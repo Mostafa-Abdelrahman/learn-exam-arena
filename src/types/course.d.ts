@@ -7,6 +7,7 @@ declare interface Course {
   doctor_id?: string;
   major_id?: string;
   student_count?: number;
+  enrolled_students?: number;
   exam_count?: number;
   created_at?: string;
   updated_at?: string;

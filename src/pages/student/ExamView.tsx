@@ -49,7 +49,7 @@ const ExamView = () => {
     queryFn: async () => {
       try {
         const response = await ExamService.getExam(examId || "");
-        return response.data;
+        return response;
       } catch (error) {
         toast({
           title: "Error",

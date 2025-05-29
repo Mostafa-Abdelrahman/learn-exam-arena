@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ExamService, CourseService } from "@/services";
@@ -62,7 +61,6 @@ const DoctorExams = () => {
         exam_date: examData.exam_date.toISOString(),
         duration: examData.duration,
         instructions: examData.instructions || undefined,
-        status: examData.status,
       });
 
       toast({

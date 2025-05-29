@@ -14,8 +14,8 @@ export interface CreateExamData {
   course_id: string;
   exam_date: string;
   duration: string;
-  total_marks: number;
-  passing_marks: number;
+  total_marks?: number;
+  passing_marks?: number;
   instructions?: string;
 }
 
@@ -51,6 +51,21 @@ class ExamService {
     }
   }
 
+  // Get exam by ID
+  async getExam(examId: string): Promise<Exam> {
+    try {
+      return await ApiService.get(`/exams/${examId}`);
+    } catch (error) {
+      console.warn('API getExam failed, using dummy data:', error);
+      return dummyExams.find(exam => exam.id === examId) || dummyExams[0];
+    }
+  }
+
+  // Get exam by ID (alias)
+  async getExamById(examId: string): Promise<Exam> {
+    return this.getExam(examId);
+  }
+
   // Get student exams
   async getStudentExams(): Promise<{ data: Exam[] }> {
     try {
@@ -61,6 +76,49 @@ class ExamService {
     }
   }
 
+  // Get course exams
+  async getCourseExams(courseId: string): Promise<{ data: Exam[] }> {
+    try {
+      return await ApiService.get(`/courses/${courseId}/exams`);
+    } catch (error) {
+      console.warn('API getCourseExams failed, using dummy data:', error);
+      const courseExams = dummyExams.filter(exam => exam.course_id === courseId);
+      return { data: courseExams };
+    }
+  }
+
+  // Get upcoming exams
+  async getUpcomingExams(): Promise<{ data: Exam[] }> {
+    try {
+      return await ApiService.get('/student/exams/upcoming');
+    } catch (error) {
+      console.warn('API getUpcomingExams failed, using dummy data:', error);
+      const upcomingExams = dummyExams.filter(exam => 
+        new Date(exam.exam_date) > new Date() && exam.status === 'published'
+      );
+      return { data: upcomingExams };
+    }
+  }
+
+  // Get student results
+  async getStudentResults(): Promise<{ data: any[] }> {
+    try {
+      return await ApiService.get('/student/results');
+    } catch (error) {
+      console.warn('API getStudentResults failed, using dummy data:', error);
+      return { 
+        data: dummyExams.map(exam => ({
+          exam_id: exam.id,
+          exam_name: exam.name,
+          course_name: exam.course?.name || 'Unknown Course',
+          score: Math.floor(Math.random() * 100),
+          status: 'graded',
+          submitted_at: new Date().toISOString()
+        }))
+      };
+    }
+  }
+
   // Get doctor exams
   async getDoctorExams(): Promise<{ data: Exam[] }> {
     try {
@@ -68,16 +126,6 @@ class ExamService {
     } catch (error) {
       console.warn('API getDoctorExams failed, using dummy data:', error);
       return { data: dummyExams };
-    }
-  }
-
-  // Get exam by ID
-  async getExam(examId: string): Promise<Exam> {
-    try {
-      return await ApiService.get(`/exams/${examId}`);
-    } catch (error) {
-      console.warn('API getExam failed, using dummy data:', error);
-      return dummyExams.find(exam => exam.id === examId) || dummyExams[0];
     }
   }
 
@@ -92,14 +140,15 @@ class ExamService {
   }
 
   // Start exam
-  async startExam(examId: string): Promise<{ message: string; session_id: string }> {
+  async startExam(examId: string): Promise<{ message: string; session_id: string; student_exam_id?: string; questions?: any[] }> {
     try {
       return await ApiService.post(`/student/exams/${examId}/start`);
     } catch (error) {
       console.warn('API startExam failed, using dummy response:', error);
       return { 
         message: 'Exam started successfully',
-        session_id: `session-${Date.now()}`
+        session_id: `session-${Date.now()}`,
+        student_exam_id: `student_exam-${Date.now()}`
       };
     }
   }
