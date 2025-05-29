@@ -1,6 +1,7 @@
 
 import ApiService from './api.service';
 import { dummyGrades } from '@/data/dummy-grades';
+import { dummyStudentCourses } from '@/data/dummy-student-courses';
 
 class StudentService {
   // Get student grades
@@ -47,6 +48,26 @@ class StudentService {
           updated_at: new Date().toISOString()
         }
       };
+    }
+  }
+
+  // Get student courses
+  async getStudentCourses(): Promise<{ data: StudentCourse[] }> {
+    try {
+      return await ApiService.get('/student/courses');
+    } catch (error) {
+      console.warn('API getStudentCourses failed, using dummy data:', error);
+      return { data: dummyStudentCourses };
+    }
+  }
+
+  // Enroll in course
+  async enrollInCourse(courseId: string): Promise<{ message: string }> {
+    try {
+      return await ApiService.post(`/student/courses/${courseId}/enroll`);
+    } catch (error) {
+      console.warn('API enrollInCourse failed, using dummy response:', error);
+      return { message: 'Successfully enrolled in course' };
     }
   }
 }

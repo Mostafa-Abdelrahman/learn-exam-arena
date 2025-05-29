@@ -1,29 +1,28 @@
 
 declare interface Course {
   id: string;
-  course_id?: string; // For backward compatibility
   name: string;
-  course_name?: string; // For backward compatibility
   code: string;
-  course_code?: string; // For backward compatibility
   description?: string;
-  created_by?: string;
+  doctor_id?: string;
+  major_id?: string;
+  student_count?: number;
+  exam_count?: number;
   created_at?: string;
   updated_at?: string;
-  doctors?: {
-    id: string;
-    name: string;
-  }[];
-  students?: {
-    id: string;
-    name: string;
-  }[];
-  exam_count?: number;
-  student_count?: number;
-  doctor_count?: number;
-  major_id?: string;
-  major?: {
-    id: string;
-    name: string;
+}
+
+declare interface StudentCourse {
+  student_course_id: string;
+  student_id: string;
+  course_id: string;
+  enrollment_date: string;
+  course: {
+    course_id: string;
+    course_name: string;
+    course_code: string;
+    description?: string;
+    student_count?: number;
+    exam_count?: number;
   };
 }

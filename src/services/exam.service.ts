@@ -54,6 +54,28 @@ class ExamService {
     }
   }
 
+  // Get exam (alias for getExamById)
+  async getExam(examId: string): Promise<{ data: Exam }> {
+    try {
+      const exam = await this.getExamById(examId);
+      return { data: exam };
+    } catch (error) {
+      console.warn('API getExam failed, using dummy data:', error);
+      const exam = dummyExams.find(e => e.id === examId) || dummyExams[0];
+      return { data: exam };
+    }
+  }
+
+  // Get exam questions
+  async getExamQuestions(examId: string): Promise<{ data: any[] }> {
+    try {
+      return await ApiService.get(`/exams/${examId}/questions`);
+    } catch (error) {
+      console.warn('API getExamQuestions failed, using dummy data:', error);
+      return { data: [] };
+    }
+  }
+
   // Doctor: Get all exams created by doctor
   async getDoctorExams(): Promise<{ data: Exam[] }> {
     try {
@@ -62,6 +84,11 @@ class ExamService {
       console.warn('API getDoctorExams failed, using dummy data:', error);
       return { data: dummyExams };
     }
+  }
+
+  // Get all exams (alias for getDoctorExams)
+  async getAllExams(): Promise<{ data: Exam[] }> {
+    return this.getDoctorExams();
   }
 
   // Doctor: Create exam
@@ -73,6 +100,7 @@ class ExamService {
       const newExam = {
         id: `exam-${Date.now()}`,
         ...examData,
+        duration: examData.duration?.toString() || "60",
         questions_count: 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -91,6 +119,7 @@ class ExamService {
       const updatedExam = {
         ...existingExam,
         ...examData,
+        duration: examData.duration?.toString() || existingExam.duration,
         updated_at: new Date().toISOString()
       };
       return { exam: updatedExam };
@@ -107,6 +136,29 @@ class ExamService {
     }
   }
 
+  // Student: Start exam
+  async startExam(examId: string): Promise<{ student_exam_id: string; questions?: any[] }> {
+    try {
+      return await ApiService.post(`/student/exams/${examId}/start`);
+    } catch (error) {
+      console.warn('API startExam failed, using dummy response:', error);
+      return { 
+        student_exam_id: `student-exam-${Date.now()}`,
+        questions: []
+      };
+    }
+  }
+
+  // Student: Submit answer
+  async submitAnswer(examId: string, questionId: string, answer: string): Promise<{ message: string }> {
+    try {
+      return await ApiService.post(`/student/exams/${examId}/answers`, { questionId, answer });
+    } catch (error) {
+      console.warn('API submitAnswer failed, using dummy response:', error);
+      return { message: 'Answer saved' };
+    }
+  }
+
   // Student: Take exam
   async takeExam(examId: string): Promise<{ exam: Exam; questions: Question[] }> {
     try {
@@ -116,7 +168,7 @@ class ExamService {
       const exam = dummyExams.find(e => e.id === examId) || dummyExams[0];
       return { 
         exam, 
-        questions: [] // Would need dummy questions data
+        questions: []
       };
     }
   }

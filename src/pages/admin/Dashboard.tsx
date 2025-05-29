@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AdminService } from '@/services';
-import type { SystemStats } from '@/services/admin.service';
+import AdminService, { SystemStats } from '@/services/admin.service';
 
 interface ActivityItem {
   id: string;

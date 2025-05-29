@@ -95,11 +95,11 @@ const TakeExam = () => {
       setLoading(true);
       const response = await ExamService.getExamById(examId);
       
-      if (response && response.data) {
-        setExam(response.data);
+      if (response) {
+        setExam(response);
         
         // Transform the questions to match our local interface
-        const transformedQuestions: ExamQuestion[] = (response.data.questions || []).map((q: any) => ({
+        const transformedQuestions: ExamQuestion[] = (response.questions || []).map((q: any) => ({
           id: q.id || q.exam_question_id,
           text: q.text || q.question_text,
           type: q.type === 'multiple-choice' ? 'mcq' : q.type,
@@ -110,7 +110,7 @@ const TakeExam = () => {
         }));
         
         setQuestions(transformedQuestions);
-        setTimeRemaining(parseInt(response.data.duration) * 60); // Convert minutes to seconds
+        setTimeRemaining(parseInt(response.duration) * 60); // Convert minutes to seconds
       }
     } catch (error: any) {
       console.error("Error fetching exam:", error);
