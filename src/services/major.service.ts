@@ -33,7 +33,8 @@ class MajorService {
         ...majorData,
         student_count: 0,
         course_count: 0,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
       return { data: newMajor, message: 'Major created successfully' };
     }

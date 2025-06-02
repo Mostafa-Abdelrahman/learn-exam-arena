@@ -1,7 +1,21 @@
-
 import { User } from '@/types/user';
-import { Course } from '@/types/course';
 import { Major } from '@/types/major';
+
+// Define Course interface locally since we can't import from .d.ts
+interface Course {
+  id: string;
+  name: string;
+  code: string;
+  description?: string;
+  credits: number;
+  semester: string;
+  major_id: string;
+  doctor_id: string;
+  student_count: number;
+  status: 'active' | 'inactive';
+  created_at: string;
+  updated_at?: string;
+}
 
 // Majors
 export const dummyMajors: Major[] = [
@@ -13,7 +27,8 @@ export const dummyMajors: Major[] = [
     status: "active",
     student_count: 45,
     course_count: 8,
-    created_at: "2024-01-15T10:00:00Z"
+    created_at: "2024-01-15T10:00:00Z",
+    updated_at: "2024-01-15T10:00:00Z"
   },
   {
     id: "major-2", 
@@ -23,7 +38,8 @@ export const dummyMajors: Major[] = [
     status: "active",
     student_count: 32,
     course_count: 6,
-    created_at: "2024-01-16T10:00:00Z"
+    created_at: "2024-01-16T10:00:00Z",
+    updated_at: "2024-01-16T10:00:00Z"
   },
   {
     id: "major-3",
@@ -33,7 +49,8 @@ export const dummyMajors: Major[] = [
     status: "active",
     student_count: 28,
     course_count: 7,
-    created_at: "2024-01-17T10:00:00Z"
+    created_at: "2024-01-17T10:00:00Z",
+    updated_at: "2024-01-17T10:00:00Z"
   },
   {
     id: "major-4",
@@ -43,7 +60,8 @@ export const dummyMajors: Major[] = [
     status: "active",
     student_count: 22,
     course_count: 5,
-    created_at: "2024-01-18T10:00:00Z"
+    created_at: "2024-01-18T10:00:00Z",
+    updated_at: "2024-01-18T10:00:00Z"
   }
 ];
 

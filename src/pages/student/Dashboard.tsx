@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -242,12 +241,12 @@ const StudentDashboard = () => {
               </div>
             ) : enrolledCourses.length > 0 ? (
               <div className="space-y-3">
-                {enrolledCourses.slice(0, 3).map((course) => (
-                  <div key={course.id} className="flex justify-between items-center">
+                {enrolledCourses.slice(0, 3).map((studentCourse: any) => (
+                  <div key={studentCourse.course_id} className="flex justify-between items-center">
                     <div>
-                      <p className="font-medium">{course.name}</p>
+                      <p className="font-medium">{studentCourse.course.course_name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {course.code} • Grade: {course.current_grade || 'N/A'}
+                        {studentCourse.course.course_code} • Grade: N/A
                       </p>
                     </div>
                     <Button 
