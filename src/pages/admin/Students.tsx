@@ -16,16 +16,47 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import UserService from "@/services/user.service";
+import MajorService from "@/services/major.service";
 import { Loader2, Search, Plus, Edit, Trash2, GraduationCap, BookOpen, Award } from "lucide-react";
+import { CreateUserData, UpdateUserData, User } from "@/types/user";
 
 const AdminStudents = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
+  const [formData, setFormData] = useState<CreateUserData>({
+    name: "",
+    email: "",
+    password: "",
+    role: "student",
+    gender: "male",
+    major_id: ""
+  });
 
   const { data: students, isLoading } = useQuery({
     queryKey: ["admin-students"],
@@ -44,25 +75,126 @@ const AdminStudents = () => {
     },
   });
 
+  const { data: majors } = useQuery({
+    queryKey: ["majors-for-students"],
+    queryFn: async () => {
+      try {
+        const response = await MajorService.getAllMajors();
+        return response.data;
+      } catch (error) {
+        return [];
+      }
+    },
+  });
+
+  const createStudentMutation = useMutation({
+    mutationFn: (studentData: CreateUserData) => UserService.createUser(studentData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-students"] });
+      setIsCreateDialogOpen(false);
+      resetForm();
+      toast({
+        title: "Success",
+        description: "Student created successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create student",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateStudentMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateUserData }) => UserService.updateUser(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-students"] });
+      setIsEditDialogOpen(false);
+      resetForm();
+      toast({
+        title: "Success",
+        description: "Student updated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update student",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteStudentMutation = useMutation({
+    mutationFn: (studentId: string) => UserService.deleteUser(studentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-students"] });
+      toast({
+        title: "Success",
+        description: "Student deleted successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete student",
+        variant: "destructive",
+      });
+    },
+  });
+
   const filteredStudents = students?.filter(student =>
     student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     student.major?.name.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
-  const handleDelete = async (studentId: string) => {
-    try {
-      await UserService.deleteUser(studentId);
-      toast({
-        title: "Success",
-        description: "Student deleted successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete student",
-        variant: "destructive",
-      });
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      email: "",
+      password: "",
+      role: "student",
+      gender: "male",
+      major_id: ""
+    });
+    setSelectedStudent(null);
+  };
+
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createStudentMutation.mutate(formData);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedStudent) {
+      const updateData = { ...formData };
+      if (!updateData.password) {
+        delete updateData.password;
+      }
+      updateStudentMutation.mutate({ id: selectedStudent.id, data: updateData as UpdateUserData });
+    }
+  };
+
+  const handleEdit = (student: User) => {
+    setSelectedStudent(student);
+    setFormData({
+      name: student.name,
+      email: student.email,
+      password: "",
+      role: student.role,
+      gender: student.gender,
+      major_id: student.major_id || ""
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDelete = (studentId: string) => {
+    if (confirm("Are you sure you want to delete this student?")) {
+      deleteStudentMutation.mutate(studentId);
     }
   };
 
@@ -87,10 +219,89 @@ const AdminStudents = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add New Student
-          </Button>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add New Student
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <form onSubmit={handleCreateSubmit}>
+                <DialogHeader>
+                  <DialogTitle>Create New Student</DialogTitle>
+                  <DialogDescription>
+                    Add a new student to the system
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="gender">Gender</Label>
+                    <Select value={formData.gender} onValueChange={(value: "male" | "female" | "other") => setFormData({...formData, gender: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="major">Major</Label>
+                    <Select value={formData.major_id} onValueChange={(value) => setFormData({...formData, major_id: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select major" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {majors?.map((major) => (
+                          <SelectItem key={major.id} value={major.id}>
+                            {major.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit" disabled={createStudentMutation.isPending}>
+                    {createStudentMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Create Student
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -185,7 +396,11 @@ const AdminStudents = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEdit(student)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button 
@@ -205,6 +420,84 @@ const AdminStudents = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <form onSubmit={handleEditSubmit}>
+            <DialogHeader>
+              <DialogTitle>Edit Student</DialogTitle>
+              <DialogDescription>
+                Update student information
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-name">Full Name</Label>
+                <Input
+                  id="edit-name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-password">New Password (Leave blank to keep current)</Label>
+                <Input
+                  id="edit-password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-gender">Gender</Label>
+                <Select value={formData.gender} onValueChange={(value: "male" | "female" | "other") => setFormData({...formData, gender: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-major">Major</Label>
+                <Select value={formData.major_id} onValueChange={(value) => setFormData({...formData, major_id: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select major" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {majors?.map((major) => (
+                      <SelectItem key={major.id} value={major.id}>
+                        {major.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={updateStudentMutation.isPending}>
+                {updateStudentMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Update Student
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
