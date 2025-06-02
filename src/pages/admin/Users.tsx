@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,15 +36,16 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import UserService from "@/services/user.service";
+import UserService, { UserFilters } from "@/services/user.service";
 import MajorService from "@/services/major.service";
 import { Loader2, Search, Plus, Edit, Trash2, Shield, Users, UserCheck } from "lucide-react";
+import { CreateUserData, UpdateUserData } from "@/types/user";
 
 const AdminUsers = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState<UserFilters['role'] | "">("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -62,7 +62,7 @@ const AdminUsers = () => {
     queryKey: ["admin-users", roleFilter],
     queryFn: async () => {
       try {
-        const filters = roleFilter ? { role: roleFilter } : {};
+        const filters: UserFilters = roleFilter ? { role: roleFilter } : {};
         const response = await UserService.getAllUsers(filters);
         return response.data;
       } catch (error) {
@@ -89,7 +89,7 @@ const AdminUsers = () => {
   });
 
   const createUserMutation = useMutation({
-    mutationFn: (userData) => UserService.createUser(userData),
+    mutationFn: (userData: CreateUserData) => UserService.createUser(userData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setIsCreateDialogOpen(false);
@@ -109,7 +109,7 @@ const AdminUsers = () => {
   });
 
   const updateUserMutation = useMutation({
-    mutationFn: ({ id, data }) => UserService.updateUser(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateUserData }) => UserService.updateUser(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setIsEditDialogOpen(false);
@@ -129,7 +129,7 @@ const AdminUsers = () => {
   });
 
   const deleteUserMutation = useMutation({
-    mutationFn: (userId) => UserService.deleteUser(userId),
+    mutationFn: (userId: string) => UserService.deleteUser(userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       toast({
@@ -166,7 +166,7 @@ const AdminUsers = () => {
 
   const handleCreateSubmit = (e) => {
     e.preventDefault();
-    createUserMutation.mutate(formData);
+    createUserMutation.mutate(formData as CreateUserData);
   };
 
   const handleEditSubmit = (e) => {
@@ -175,7 +175,7 @@ const AdminUsers = () => {
     if (!updateData.password) {
       delete updateData.password;
     }
-    updateUserMutation.mutate({ id: selectedUser.id, data: updateData });
+    updateUserMutation.mutate({ id: selectedUser.id, data: updateData as UpdateUserData });
   };
 
   const handleEdit = (user) => {

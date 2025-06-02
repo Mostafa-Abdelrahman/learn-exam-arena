@@ -1,5 +1,6 @@
 
 import ApiService from './api.service';
+import { User, CreateUserData, UpdateUserData } from '@/types/user';
 
 export interface UserFilters {
   role?: 'student' | 'doctor' | 'admin';
@@ -38,24 +39,6 @@ export interface SystemStats {
   recent_activity: any[];
 }
 
-export interface CreateUserData {
-  name: string;
-  email: string;
-  password: string;
-  role: 'student' | 'doctor' | 'admin';
-  gender: 'male' | 'female' | 'other';
-  major_id?: string;
-}
-
-export interface UpdateUserData {
-  name?: string;
-  email?: string;
-  role?: 'student' | 'doctor' | 'admin';
-  gender?: 'male' | 'female' | 'other';
-  major_id?: string;
-  status?: 'active' | 'inactive' | 'suspended';
-}
-
 class UserService {
   // User Management
   async getAllUsers(filters?: UserFilters, pagination?: PaginationParams): Promise<{
@@ -75,11 +58,11 @@ class UserService {
     return await ApiService.get(`/admin/users/${userId}`);
   }
 
-  async createUser(userData: CreateUserData): Promise<{ user: User; message: string }> {
+  async createUser(userData: CreateUserData): Promise<{ data: User; message: string }> {
     return await ApiService.post('/admin/users', userData);
   }
 
-  async updateUser(userId: string, userData: UpdateUserData): Promise<{ user: User; message: string }> {
+  async updateUser(userId: string, userData: UpdateUserData): Promise<{ data: User; message: string }> {
     return await ApiService.put(`/admin/users/${userId}`, userData);
   }
 

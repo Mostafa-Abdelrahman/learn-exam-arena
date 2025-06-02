@@ -1,32 +1,42 @@
 
-declare interface User {
+export interface User {
   id: string;
   name: string;
   email: string;
-  role: "student" | "doctor" | "admin";
-  gender?: "male" | "female" | "other";
+  role: 'student' | 'doctor' | 'admin';
+  gender: 'male' | 'female' | 'other';
+  status?: 'active' | 'inactive' | 'suspended';
   major_id?: string;
-  created_at?: string;
-  updated_at?: string;
-  major?: {
-    id: string;
-    name: string;
-  };
+  major?: Major;
+  created_at: string;
+  updated_at: string;
+  
+  // Student-specific properties
+  gpa?: number;
+  enrolled_courses?: Course[];
+  current_grade?: number;
+  course?: Course;
+  
+  // Doctor-specific properties
+  courses?: Course[];
+  total_students?: number;
 }
 
-declare interface Student extends User {
-  role: "student";
-  student_id?: string;
-  enrollment_date?: string;
+export interface CreateUserData {
+  name: string;
+  email: string;
+  password: string;
+  role: 'student' | 'doctor' | 'admin';
+  gender: 'male' | 'female' | 'other';
+  major_id?: string;
 }
 
-declare interface Doctor extends User {
-  role: "doctor";
-  doctor_id?: string;
-  department?: string;
-  specialization?: string;
-}
-
-declare interface Admin extends User {
-  role: "admin";
+export interface UpdateUserData {
+  name?: string;
+  email?: string;
+  password?: string;
+  role?: 'student' | 'doctor' | 'admin';
+  gender?: 'male' | 'female' | 'other';
+  major_id?: string;
+  status?: 'active' | 'inactive' | 'suspended';
 }

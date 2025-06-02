@@ -1,12 +1,26 @@
 
-declare interface Major {
+export interface Major {
   id: string;
   name: string;
-  code?: string;
+  code: string;
   description?: string;
-  created_at?: string;
-  updated_at?: string;
+  status: 'active' | 'inactive';
   student_count?: number;
   course_count?: number;
-  courses?: Course[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateMajorData {
+  name: string;
+  code: string;
+  description?: string;
+  status?: 'active' | 'inactive';
+}
+
+export interface UpdateMajorData {
+  name?: string;
+  code?: string;
+  description?: string;
+  status?: 'active' | 'inactive';
 }

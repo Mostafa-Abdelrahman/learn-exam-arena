@@ -1,29 +1,6 @@
 
 import ApiService from './api.service';
-
-export interface Major {
-  id: string;
-  name: string;
-  code: string;
-  description?: string;
-  status: 'active' | 'inactive';
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateMajorData {
-  name: string;
-  code: string;
-  description?: string;
-  status?: 'active' | 'inactive';
-}
-
-export interface UpdateMajorData {
-  name?: string;
-  code?: string;
-  description?: string;
-  status?: 'active' | 'inactive';
-}
+import { Major, CreateMajorData, UpdateMajorData } from '@/types/major';
 
 class MajorService {
   async getAllMajors(): Promise<{ data: Major[] }> {
@@ -34,16 +11,20 @@ class MajorService {
     return await ApiService.get(`/admin/majors/${majorId}`);
   }
 
-  async createMajor(majorData: CreateMajorData): Promise<{ major: Major; message: string }> {
+  async createMajor(majorData: CreateMajorData): Promise<{ data: Major; message: string }> {
     return await ApiService.post('/admin/majors', majorData);
   }
 
-  async updateMajor(majorId: string, majorData: UpdateMajorData): Promise<{ major: Major; message: string }> {
+  async updateMajor(majorId: string, majorData: UpdateMajorData): Promise<{ data: Major; message: string }> {
     return await ApiService.put(`/admin/majors/${majorId}`, majorData);
   }
 
   async deleteMajor(majorId: string): Promise<{ message: string }> {
     return await ApiService.delete(`/admin/majors/${majorId}`);
+  }
+
+  async getMajorStats(): Promise<{ data: any }> {
+    return await ApiService.get('/admin/majors/stats');
   }
 }
 
