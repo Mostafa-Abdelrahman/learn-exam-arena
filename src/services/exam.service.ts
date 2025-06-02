@@ -1,6 +1,6 @@
 
 import ApiService from './api.service';
-import { dummyExams } from '@/data/dummy-exams';
+import { dummyExamsComprehensive, dummyStudentResults } from '@/data/dummy-comprehensive';
 
 export interface ExamFilters {
   course_id?: string;
@@ -38,11 +38,11 @@ class ExamService {
     } catch (error) {
       console.warn('API getAllExams failed, using dummy data:', error);
       return {
-        data: dummyExams,
+        data: dummyExamsComprehensive,
         pagination: {
           current_page: 1,
           total_pages: 1,
-          total_count: dummyExams.length,
+          total_count: dummyExamsComprehensive.length,
           per_page: 25,
           has_next: false,
           has_prev: false
@@ -57,7 +57,7 @@ class ExamService {
       return await ApiService.get(`/exams/${examId}`);
     } catch (error) {
       console.warn('API getExam failed, using dummy data:', error);
-      return dummyExams.find(exam => exam.id === examId) || dummyExams[0];
+      return dummyExamsComprehensive.find(exam => exam.id === examId) || dummyExamsComprehensive[0];
     }
   }
 
@@ -67,7 +67,7 @@ class ExamService {
       return await ApiService.get(`/exams/${examId}`);
     } catch (error) {
       console.warn('API getExamById failed, using dummy data:', error);
-      return dummyExams.find(exam => exam.id === examId) || dummyExams[0];
+      return dummyExamsComprehensive.find(exam => exam.id === examId) || dummyExamsComprehensive[0];
     }
   }
 
@@ -77,7 +77,7 @@ class ExamService {
       return await ApiService.get('/student/exams');
     } catch (error) {
       console.warn('API getStudentExams failed, using dummy data:', error);
-      return { data: dummyExams };
+      return { data: dummyExamsComprehensive.filter(exam => exam.status === 'published') };
     }
   }
 
@@ -87,7 +87,7 @@ class ExamService {
       return await ApiService.get(`/courses/${courseId}/exams`);
     } catch (error) {
       console.warn('API getCourseExams failed, using dummy data:', error);
-      const courseExams = dummyExams.filter(exam => exam.course_id === courseId);
+      const courseExams = dummyExamsComprehensive.filter(exam => exam.course_id === courseId);
       return { data: courseExams };
     }
   }
@@ -98,7 +98,7 @@ class ExamService {
       return await ApiService.get('/student/exams/upcoming');
     } catch (error) {
       console.warn('API getUpcomingExams failed, using dummy data:', error);
-      const upcomingExams = dummyExams.filter(exam => 
+      const upcomingExams = dummyExamsComprehensive.filter(exam => 
         new Date(exam.exam_date) > new Date() && exam.status === 'published'
       );
       return { data: upcomingExams };
@@ -111,16 +111,7 @@ class ExamService {
       return await ApiService.get('/student/results');
     } catch (error) {
       console.warn('API getStudentResults failed, using dummy data:', error);
-      return { 
-        data: dummyExams.map(exam => ({
-          exam_id: exam.id,
-          exam_name: exam.name,
-          course_name: exam.course?.name || 'Unknown Course',
-          score: Math.floor(Math.random() * 100),
-          status: 'graded',
-          submitted_at: new Date().toISOString()
-        }))
-      };
+      return { data: dummyStudentResults };
     }
   }
 
@@ -130,7 +121,7 @@ class ExamService {
       return await ApiService.get('/doctor/exams');
     } catch (error) {
       console.warn('API getDoctorExams failed, using dummy data:', error);
-      return { data: dummyExams };
+      return { data: dummyExamsComprehensive };
     }
   }
 
@@ -140,30 +131,8 @@ class ExamService {
       return await ApiService.get(`/exams/${examId}/questions`);
     } catch (error) {
       console.warn('API getExamQuestions failed, using dummy data:', error);
-      return { 
-        data: [
-          {
-            exam_question_id: "eq-1",
-            question_id: "q-1",
-            question_text: "What is the capital of France?",
-            question_type: "multiple-choice",
-            difficulty_level: "easy",
-            choices: [
-              { choice_id: "c1", choice_text: "London" },
-              { choice_id: "c2", choice_text: "Paris" },
-              { choice_id: "c3", choice_text: "Berlin" },
-              { choice_id: "c4", choice_text: "Madrid" }
-            ]
-          },
-          {
-            exam_question_id: "eq-2",
-            question_id: "q-2",
-            question_text: "Explain the concept of object-oriented programming.",
-            question_type: "written",
-            difficulty_level: "medium"
-          }
-        ]
-      };
+      const exam = dummyExamsComprehensive.find(e => e.id === examId);
+      return { data: exam?.questions || [] };
     }
   }
 
@@ -173,30 +142,12 @@ class ExamService {
       return await ApiService.post(`/student/exams/${examId}/start`);
     } catch (error) {
       console.warn('API startExam failed, using dummy response:', error);
-      const questions = [
-        {
-          id: "eq-1",
-          text: "What is the capital of France?",
-          type: "mcq",
-          choices: [
-            { id: "c1", text: "London" },
-            { id: "c2", text: "Paris" },
-            { id: "c3", text: "Berlin" },
-            { id: "c4", text: "Madrid" }
-          ]
-        },
-        {
-          id: "eq-2",
-          text: "Explain the concept of object-oriented programming.",
-          type: "written"
-        }
-      ];
-      
+      const exam = dummyExamsComprehensive.find(e => e.id === examId);
       return { 
         message: 'Exam started successfully',
         session_id: `session-${Date.now()}`,
         student_exam_id: `student_exam-${Date.now()}`,
-        questions
+        questions: exam?.questions || []
       };
     }
   }
@@ -220,36 +171,8 @@ class ExamService {
       return await ApiService.get(`/student/exams/${examId}/take`);
     } catch (error) {
       console.warn('API takeExam failed, using dummy data:', error);
-      const exam = dummyExams.find(exam => exam.id === examId) || dummyExams[0];
-      return {
-        ...exam,
-        questions: [
-          {
-            id: "eq-1",
-            exam_question_id: "eq-1",
-            question_id: "q-1",
-            text: "What is the capital of France?",
-            question_text: "What is the capital of France?",
-            type: "mcq",
-            question_type: "multiple-choice",
-            choices: [
-              { id: "c1", choice_id: "c1", text: "London", choice_text: "London" },
-              { id: "c2", choice_id: "c2", text: "Paris", choice_text: "Paris" },
-              { id: "c3", choice_id: "c3", text: "Berlin", choice_text: "Berlin" },
-              { id: "c4", choice_id: "c4", text: "Madrid", choice_text: "Madrid" }
-            ]
-          },
-          {
-            id: "eq-2",
-            exam_question_id: "eq-2",
-            question_id: "q-2",
-            text: "Explain the concept of object-oriented programming.",
-            question_text: "Explain the concept of object-oriented programming.",
-            type: "written",
-            question_type: "written"
-          }
-        ]
-      };
+      const exam = dummyExamsComprehensive.find(exam => exam.id === examId) || dummyExamsComprehensive[0];
+      return exam;
     }
   }
 
@@ -289,7 +212,7 @@ class ExamService {
       return await ApiService.put(`/doctor/exams/${examId}`, examData);
     } catch (error) {
       console.warn('API updateExam failed, using dummy response:', error);
-      const existingExam = dummyExams.find(e => e.id === examId) || dummyExams[0];
+      const existingExam = dummyExamsComprehensive.find(e => e.id === examId) || dummyExamsComprehensive[0];
       const updatedExam = {
         ...existingExam,
         ...examData,

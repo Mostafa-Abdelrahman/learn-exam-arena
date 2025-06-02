@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -8,287 +9,185 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  Loader2,
-  Clock,
-  FileText,
-  CheckCircle2,
-  AlertTriangle,
-} from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
-import ExamService from "@/services/exam.service";
-
-interface ExamQuestion {
-  id: string;
-  text: string;
-  type: "mcq" | "written" | "multiple-choice";
-  choices?: {
-    id: string;
-    text: string;
-  }[];
-}
-
-interface StudentAnswer {
-  questionId: string;
-  answer: string;
-}
+import { 
+  Clock, 
+  CheckCircle, 
+  AlertTriangle, 
+  FileText,
+  ArrowLeft,
+  ArrowRight,
+  Send
+} from "lucide-react";
+import { useExamTaking } from "@/hooks/useExamTaking";
+import { Separator } from "@/components/ui/separator";
 
 const TakeExam = () => {
   const { examId } = useParams<{ examId: string }>();
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
   const { toast } = useToast();
   
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [exam, setExam] = useState<any>(null);
-  const [questions, setQuestions] = useState<ExamQuestion[]>([]);
-  const [answers, setAnswers] = useState<StudentAnswer[]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [timeRemaining, setTimeRemaining] = useState(0);
-  const [examStarted, setExamStarted] = useState(false);
-  const [studentExamId, setStudentExamId] = useState<string>("");
+  const {
+    loading,
+    submitting,
+    exam,
+    questions,
+    answers,
+    currentQuestionIndex,
+    timeRemaining,
+    examStarted,
+    setCurrentQuestionIndex,
+    handleStartExam,
+    handleAnswerChange,
+    handleSubmitExam,
+  } = useExamTaking(examId!);
 
-  useEffect(() => {
-    if (examId && currentUser) {
-      fetchExamDetails();
-    }
-  }, [examId, currentUser]);
-
-  useEffect(() => {
-    if (examStarted && timeRemaining > 0) {
-      const timer = setInterval(() => {
-        setTimeRemaining(prev => {
-          if (prev <= 1) {
-            handleSubmitExam();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(timer);
-    }
-  }, [examStarted, timeRemaining]);
-
-  const fetchExamDetails = async () => {
-    if (!examId) return;
-
-    try {
-      setLoading(true);
-      const response = await ExamService.getExamById(examId);
-      
-      if (response) {
-        setExam(response);
-        
-        // Transform the questions to match our local interface
-        const transformedQuestions: ExamQuestion[] = (response.questions || []).map((q: any) => ({
-          id: q.id || q.exam_question_id,
-          text: q.text || q.question_text,
-          type: q.type === 'multiple-choice' ? 'mcq' : q.type,
-          choices: q.choices?.map((c: any) => ({
-            id: c.id || c.choice_id,
-            text: c.text || c.choice_text
-          }))
-        }));
-        
-        setQuestions(transformedQuestions);
-        setTimeRemaining(parseInt(response.duration) * 60); // Convert minutes to seconds
-      }
-    } catch (error: any) {
-      console.error("Error fetching exam:", error);
-      toast({
-        title: "Error loading exam",
-        description: error.message || "Could not load exam details.",
-        variant: "destructive",
-      });
-      navigate("/student/exams");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleStartExam = async () => {
-    if (!examId) return;
-
-    try {
-      const response = await ExamService.startExam(examId);
-      
-      if (response) {
-        setStudentExamId(response.student_exam_id || response.session_id);
-        setExamStarted(true);
-        
-        // Update questions if returned from start exam
-        if (response.questions) {
-          const transformedQuestions: ExamQuestion[] = response.questions.map((q: any) => ({
-            id: q.id || q.exam_question_id,
-            text: q.text || q.question_text,
-            type: q.type === 'multiple-choice' ? 'mcq' : q.type,
-            choices: q.choices?.map((c: any) => ({
-              id: c.id || c.choice_id,
-              text: c.text || c.choice_text
-            }))
-          }));
-          setQuestions(transformedQuestions);
-        }
-        
-        toast({
-          title: "Exam started",
-          description: "Good luck! Timer has begun.",
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error starting exam",
-        description: error.message || "Could not start the exam.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleAnswerChange = (questionId: string, answer: string) => {
-    setAnswers(prev => {
-      const existing = prev.find(a => a.questionId === questionId);
-      if (existing) {
-        return prev.map(a => 
-          a.questionId === questionId ? { ...a, answer } : a
-        );
-      }
-      return [...prev, { questionId, answer }];
-    });
-
-    // Auto-save answer
-    if (examId && studentExamId) {
-      ExamService.submitAnswer(examId, questionId, answer).catch(error => {
-        console.error("Error saving answer:", error);
-      });
-    }
-  };
-
-  const handleSubmitExam = async () => {
-    if (!examId || !studentExamId) return;
-
-    try {
-      setSubmitting(true);
-      
-      await ExamService.submitExam(examId, answers);
-      
-      toast({
-        title: "Exam submitted successfully",
-        description: "Your answers have been saved. Results will be available soon.",
-      });
-
-      navigate("/student/results");
-    } catch (error: any) {
-      toast({
-        title: "Error submitting exam",
-        description: error.message || "Could not submit your exam.",
-        variant: "destructive",
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
+    const remainingSeconds = seconds % 60;
     
     if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
     }
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const getTimeColor = () => {
+    if (timeRemaining < 300) return "text-red-600"; // Last 5 minutes
+    if (timeRemaining < 900) return "text-orange-600"; // Last 15 minutes
+    return "text-green-600";
   };
 
   const currentQuestion = questions[currentQuestionIndex];
-  const currentAnswer = answers.find(a => a.questionId === currentQuestion?.id)?.answer || "";
-  const answeredQuestions = answers.length;
-  const totalQuestions = questions.length;
+  const currentAnswer = answers.find(a => a.questionId === currentQuestion?.id);
+
+  const answeredCount = answers.length;
+  const progressPercentage = questions.length > 0 ? (answeredCount / questions.length) * 100 : 0;
+
+  const handleNext = () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+    }
+  };
+
+  const handleFinishExam = async () => {
+    const success = await handleSubmitExam();
+    if (success) {
+      toast({
+        title: "Exam Submitted Successfully",
+        description: "Your answers have been recorded. Results will be available soon.",
+      });
+      navigate("/student/results");
+    }
+  };
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading exam...</p>
+        </div>
       </div>
     );
   }
 
   if (!exam) {
     return (
-      <div className="text-center py-20">
-        <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold mb-2">Exam not found</h3>
-        <p className="text-muted-foreground">The exam you're looking for doesn't exist.</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-red-600">Exam Not Found</CardTitle>
+            <CardDescription>The requested exam could not be loaded.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => navigate("/student/exams")} className="w-full">
+              Back to Exams
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (!examStarted) {
     return (
-      <div className="max-w-2xl mx-auto space-y-6">
-        <Card>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl">
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <FileText className="h-5 w-5" />
-              <span>{exam.name}</span>
-            </CardTitle>
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="h-6 w-6" />
+              <CardTitle>{exam.name}</CardTitle>
+            </div>
             <CardDescription>
-              {exam.course?.name} ({exam.course?.code})
+              {exam.course?.name} • Duration: {exam.duration} minutes
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span>Duration: {exam.duration} minutes</span>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Exam Date</Label>
+                <p className="text-sm">{new Date(exam.exam_date).toLocaleString()}</p>
               </div>
-              <div className="flex items-center space-x-2">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <span>Questions: {questions.length}</span>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Duration</Label>
+                <p className="text-sm">{exam.duration} minutes</p>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Total Questions</Label>
+                <p className="text-sm">{questions.length} questions</p>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Total Marks</Label>
+                <p className="text-sm">{exam.total_marks || 100} marks</p>
               </div>
             </div>
 
             {exam.instructions && (
-              <div className="p-4 bg-muted rounded-lg">
-                <h4 className="font-medium mb-2">Instructions:</h4>
-                <p className="text-sm text-muted-foreground">{exam.instructions}</p>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Instructions</Label>
+                <div className="p-4 bg-muted rounded-md">
+                  <p className="text-sm">{exam.instructions}</p>
+                </div>
               </div>
             )}
 
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="flex items-center space-x-2 text-yellow-800">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm text-amber-600">
                 <AlertTriangle className="h-4 w-4" />
-                <span className="font-medium">Important:</span>
+                <span>Important Reminders:</span>
               </div>
-              <ul className="mt-2 text-sm text-yellow-700 space-y-1">
-                <li>• Once started, the timer cannot be paused</li>
-                <li>• Your answers are auto-saved as you progress</li>
-                <li>• You can navigate between questions freely</li>
-                <li>• The exam will auto-submit when time runs out</li>
+              <ul className="text-sm space-y-1 ml-6 list-disc">
+                <li>Once started, the timer cannot be paused</li>
+                <li>Your answers will be auto-saved as you progress</li>
+                <li>Make sure you have a stable internet connection</li>
+                <li>You can navigate between questions freely</li>
+                <li>Submit before time runs out to avoid losing answers</li>
               </ul>
             </div>
 
-            <Button onClick={handleStartExam} className="w-full" size="lg">
-              Start Exam
-            </Button>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => navigate("/student/exams")}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Exams
+              </Button>
+              <Button onClick={handleStartExam} className="flex-1">
+                Start Exam
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -296,131 +195,232 @@ const TakeExam = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header with timer and progress */}
-      <Card>
-        <CardContent className="p-4">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header with Timer */}
+      <div className="bg-white border-b shadow-sm sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold">{exam.name}</h2>
-              <p className="text-sm text-muted-foreground">
-                Question {currentQuestionIndex + 1} of {totalQuestions}
-              </p>
+              <h1 className="text-lg font-semibold">{exam.name}</h1>
+              <p className="text-sm text-muted-foreground">{exam.course?.name}</p>
             </div>
-            
-            <div className="flex items-center space-x-4">
-              <Badge variant="outline" className="space-x-2">
-                <CheckCircle2 className="h-4 w-4" />
-                <span>{answeredQuestions}/{totalQuestions} answered</span>
-              </Badge>
-              
-              <Badge variant={timeRemaining < 300 ? "destructive" : "default"} className="space-x-2">
-                <Clock className="h-4 w-4" />
-                <span>{formatTime(timeRemaining)}</span>
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Question */}
-      {currentQuestion && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              {currentQuestion.text}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {currentQuestion.type === "mcq" && currentQuestion.choices ? (
-              <RadioGroup
-                value={currentAnswer}
-                onValueChange={(value) => handleAnswerChange(currentQuestion.id, value)}
+            <div className="flex items-center gap-6">
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">Progress</p>
+                <p className="font-medium">{answeredCount}/{questions.length}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">Time Remaining</p>
+                <p className={`font-mono text-lg font-bold ${getTimeColor()}`}>
+                  <Clock className="inline mr-1 h-4 w-4" />
+                  {formatTime(timeRemaining)}
+                </p>
+              </div>
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={() => setShowSubmitConfirm(true)}
+                disabled={submitting}
               >
-                {currentQuestion.choices.map((choice) => (
-                  <div key={choice.id} className="flex items-center space-x-2">
-                    <RadioGroupItem value={choice.id} id={choice.id} />
-                    <Label htmlFor={choice.id} className="flex-1">
-                      {choice.text}
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            ) : (
-              <Textarea
-                placeholder="Enter your answer..."
-                value={currentAnswer}
-                onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
-                rows={6}
-              />
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Navigation */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
-              disabled={currentQuestionIndex === 0}
-            >
-              Previous
-            </Button>
-
-            <div className="flex space-x-2">
-              {questions.map((_, index) => (
-                <Button
-                  key={index}
-                  variant={index === currentQuestionIndex ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentQuestionIndex(index)}
-                  className={`w-8 h-8 p-0 ${
-                    answers.find(a => a.questionId === questions[index].id)
-                      ? "bg-green-100 border-green-300"
-                      : ""
-                  }`}
-                >
-                  {index + 1}
-                </Button>
-              ))}
-            </div>
-
-            {currentQuestionIndex === questions.length - 1 ? (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button>Submit Exam</Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Submit Exam?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to submit your exam? You have answered {answeredQuestions} out of {totalQuestions} questions.
-                      This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleSubmitExam} disabled={submitting}>
-                      {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Submit Exam
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            ) : (
-              <Button
-                onClick={() => setCurrentQuestionIndex(prev => Math.min(questions.length - 1, prev + 1))}
-                disabled={currentQuestionIndex === questions.length - 1}
-              >
-                Next
+                <Send className="mr-2 h-4 w-4" />
+                Submit Exam
               </Button>
-            )}
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto p-4 flex gap-6">
+        {/* Question Navigation Sidebar */}
+        <div className="w-64 flex-shrink-0">
+          <Card className="sticky top-24">
+            <CardHeader>
+              <CardTitle className="text-base">Questions</CardTitle>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${progressPercentage}%` }}
+                />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-5 gap-2">
+                {questions.map((_, index) => {
+                  const isAnswered = answers.some(a => a.questionId === questions[index]?.id);
+                  const isCurrent = index === currentQuestionIndex;
+                  
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentQuestionIndex(index)}
+                      className={`
+                        w-8 h-8 rounded text-xs font-medium transition-colors
+                        ${isCurrent 
+                          ? 'bg-primary text-white' 
+                          : isAnswered 
+                            ? 'bg-green-100 text-green-700 border border-green-300' 
+                            : 'bg-gray-100 text-gray-600 border border-gray-300'
+                        }
+                        hover:bg-opacity-80
+                      `}
+                    >
+                      {index + 1}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-4 space-y-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-green-100 border border-green-300 rounded"></div>
+                  <span>Answered</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-gray-100 border border-gray-300 rounded"></div>
+                  <span>Not answered</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-primary rounded"></div>
+                  <span>Current</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Question Area */}
+        <div className="flex-1">
+          {currentQuestion && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">
+                    Question {currentQuestionIndex + 1} of {questions.length}
+                  </CardTitle>
+                  <Badge variant="outline">
+                    {currentQuestion.type === 'mcq' ? 'Multiple Choice' : 'Written Answer'}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="prose max-w-none">
+                  <p className="text-base leading-relaxed">{currentQuestion.text}</p>
+                </div>
+
+                <Separator />
+
+                {currentQuestion.type === 'mcq' && currentQuestion.choices ? (
+                  <RadioGroup 
+                    value={currentAnswer?.answer || ""} 
+                    onValueChange={(value) => handleAnswerChange(currentQuestion.id, value)}
+                  >
+                    <div className="space-y-3">
+                      {currentQuestion.choices.map((choice) => (
+                        <div key={choice.id} className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50">
+                          <RadioGroupItem value={choice.id} id={choice.id} />
+                          <Label htmlFor={choice.id} className="flex-1 cursor-pointer">
+                            {choice.text}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </RadioGroup>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="written-answer">Your Answer:</Label>
+                    <Textarea
+                      id="written-answer"
+                      placeholder="Type your answer here..."
+                      value={currentAnswer?.answer || ""}
+                      onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
+                      className="min-h-[200px]"
+                    />
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center pt-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={handlePrevious}
+                    disabled={currentQuestionIndex === 0}
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Previous
+                  </Button>
+                  
+                  <div className="flex items-center gap-2">
+                    {currentAnswer ? (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="text-sm">Answered</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-gray-500">
+                        <span className="text-sm">Not answered</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {currentQuestionIndex === questions.length - 1 ? (
+                    <Button onClick={() => setShowSubmitConfirm(true)}>
+                      <Send className="mr-2 h-4 w-4" />
+                      Submit Exam
+                    </Button>
+                  ) : (
+                    <Button onClick={handleNext}>
+                      Next
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+
+      {/* Submit Confirmation Dialog */}
+      {showSubmitConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Submit Exam?</CardTitle>
+              <CardDescription>
+                Are you sure you want to submit your exam? This action cannot be undone.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-muted p-4 rounded-md space-y-2">
+                <p className="text-sm"><strong>Answered:</strong> {answeredCount} of {questions.length} questions</p>
+                <p className="text-sm"><strong>Time Remaining:</strong> {formatTime(timeRemaining)}</p>
+              </div>
+              
+              {answeredCount < questions.length && (
+                <div className="flex items-center gap-2 text-amber-600">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="text-sm">You have unanswered questions.</span>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowSubmitConfirm(false)}
+                  className="flex-1"
+                >
+                  Continue Exam
+                </Button>
+                <Button 
+                  onClick={handleFinishExam}
+                  disabled={submitting}
+                  className="flex-1"
+                >
+                  {submitting ? "Submitting..." : "Submit Exam"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

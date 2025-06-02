@@ -25,6 +25,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,7 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import MajorService from "@/services/major.service";
-import { Loader2, Search, Plus, Edit, Trash2, School, Users, BookOpen } from "lucide-react";
+import { Loader2, Search, Plus, Edit, Trash2, GraduationCap, BookOpen, Users } from "lucide-react";
 import { CreateMajorData, UpdateMajorData, Major } from "@/types/major";
 
 const AdminMajors = () => {
@@ -117,7 +124,7 @@ const AdminMajors = () => {
     },
     onError: () => {
       toast({
-        title: "Error",
+        title: "Error", 
         description: "Failed to delete major",
         variant: "destructive",
       });
@@ -127,7 +134,7 @@ const AdminMajors = () => {
   const filteredMajors = majors?.filter(major =>
     major.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     major.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (major.description && major.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    major.description?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
   const resetForm = () => {
@@ -169,6 +176,13 @@ const AdminMajors = () => {
     }
   };
 
+  const majorStats = {
+    total: majors?.length || 0,
+    active: majors?.filter(m => m.status === 'active').length || 0,
+    totalStudents: majors?.reduce((acc, major) => acc + (major.student_count || 0), 0) || 0,
+    totalCourses: majors?.reduce((acc, major) => acc + (major.course_count || 0), 0) || 0
+  };
+
   return (
     <div className="space-y-6 animate-in">
       <div className="flex flex-col justify-between space-y-2 md:flex-row md:items-center md:space-y-0">
@@ -190,12 +204,12 @@ const AdminMajors = () => {
                 Add New Major
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-md">
               <form onSubmit={handleCreateSubmit}>
                 <DialogHeader>
                   <DialogTitle>Create New Major</DialogTitle>
                   <DialogDescription>
-                    Add a new academic major to the system
+                    Add a new major to the system
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -225,6 +239,18 @@ const AdminMajors = () => {
                       onChange={(e) => setFormData({...formData, description: e.target.value})}
                     />
                   </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select value={formData.status} onValueChange={(value: "active" | "inactive") => setFormData({...formData, status: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button type="submit" disabled={createMajorMutation.isPending}>
@@ -239,25 +265,23 @@ const AdminMajors = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Majors</CardTitle>
-            <School className="h-4 w-4 text-muted-foreground" />
+            <GraduationCap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{majors?.length || 0}</div>
+            <div className="text-2xl font-bold">{majorStats.total}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Majors</CardTitle>
-            <School className="h-4 w-4 text-muted-foreground" />
+            <GraduationCap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {majors?.filter(m => m.status === 'active').length || 0}
-            </div>
+            <div className="text-2xl font-bold">{majorStats.active}</div>
           </CardContent>
         </Card>
         <Card>
@@ -266,9 +290,16 @@ const AdminMajors = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {majors?.reduce((acc, major) => acc + (major.student_count || 0), 0) || 0}
-            </div>
+            <div className="text-2xl font-bold">{majorStats.totalStudents}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Courses</CardTitle>
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{majorStats.totalCourses}</div>
           </CardContent>
         </Card>
       </div>
@@ -290,7 +321,7 @@ const AdminMajors = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Major Name</TableHead>
+                    <TableHead>Name</TableHead>
                     <TableHead>Code</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead>Students</TableHead>
@@ -304,7 +335,7 @@ const AdminMajors = () => {
                     <TableRow key={major.id}>
                       <TableCell className="font-medium">{major.name}</TableCell>
                       <TableCell>{major.code}</TableCell>
-                      <TableCell>{major.description || "No description"}</TableCell>
+                      <TableCell className="max-w-xs truncate">{major.description}</TableCell>
                       <TableCell>{major.student_count || 0}</TableCell>
                       <TableCell>{major.course_count || 0}</TableCell>
                       <TableCell>
@@ -341,12 +372,12 @@ const AdminMajors = () => {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <form onSubmit={handleEditSubmit}>
             <DialogHeader>
               <DialogTitle>Edit Major</DialogTitle>
               <DialogDescription>
-                Update the major information
+                Update major information
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -375,6 +406,18 @@ const AdminMajors = () => {
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                 />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-status">Status</Label>
+                <Select value={formData.status} onValueChange={(value: "active" | "inactive") => setFormData({...formData, status: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <DialogFooter>
