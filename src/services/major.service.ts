@@ -1,4 +1,3 @@
-
 import ApiService from './api.service';
 import { Major, CreateMajorData, UpdateMajorData } from '@/types/major';
 import { dummyMajors } from '@/data/dummy-comprehensive';
@@ -31,6 +30,7 @@ class MajorService {
       const newMajor: Major = {
         id: `major-${Date.now()}`,
         ...majorData,
+        status: majorData.status || 'active', // Provide default value
         student_count: 0,
         course_count: 0,
         created_at: new Date().toISOString(),
