@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -112,15 +111,15 @@ const DoctorStudents = () => {
                         </div>
                       </TableCell>
                       <TableCell>{student.major?.name || "N/A"}</TableCell>
-                      <TableCell>{student.course?.name || "N/A"}</TableCell>
+                      <TableCell>{(student as any).course?.name || "N/A"}</TableCell>
                       <TableCell>
-                        <span className={`font-medium ${getGradeColor(student.current_grade || 0)}`}>
-                          {student.current_grade ? `${student.current_grade}%` : "No grade"}
+                        <span className={`font-medium ${getGradeColor((student as any).current_grade || 0)}`}>
+                          {(student as any).current_grade ? `${(student as any).current_grade}%` : "No grade"}
                         </span>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={student.status === 'active' ? 'default' : 'secondary'}>
-                          {student.status || 'active'}
+                        <Badge variant={(student as any).status === 'active' ? 'default' : 'secondary'}>
+                          {(student as any).status || 'active'}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">

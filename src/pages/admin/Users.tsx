@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -293,7 +292,7 @@ const AdminUsers = () => {
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="role">Role</Label>
-                    <Select value={formData.role} onValueChange={(value) => setFormData({...formData, role: value})}>
+                    <Select value={formData.role} onValueChange={(value: "student" | "doctor" | "admin") => setFormData({...formData, role: value})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
@@ -306,7 +305,7 @@ const AdminUsers = () => {
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="gender">Gender</Label>
-                    <Select value={formData.gender} onValueChange={(value) => setFormData({...formData, gender: value})}>
+                    <Select value={formData.gender} onValueChange={(value: "male" | "female" | "other") => setFormData({...formData, gender: value})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select gender" />
                       </SelectTrigger>
@@ -498,7 +497,7 @@ const AdminUsers = () => {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-role">Role</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({...formData, role: value})}>
+                <Select value={formData.role} onValueChange={(value: "student" | "doctor" | "admin") => setFormData({...formData, role: value})}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
@@ -511,7 +510,7 @@ const AdminUsers = () => {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-gender">Gender</Label>
-                <Select value={formData.gender} onValueChange={(value) => setFormData({...formData, gender: value})}>
+                <Select value={formData.gender} onValueChange={(value: "male" | "female" | "other") => setFormData({...formData, gender: value})}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
