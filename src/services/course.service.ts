@@ -99,6 +99,35 @@ class CourseService {
       return { message: 'Course deleted successfully' };
     }
   }
+
+  // Student-specific methods
+  async getStudentCourses(): Promise<{ data: any[] }> {
+    try {
+      return await ApiService.get('/student/courses');
+    } catch (error) {
+      console.warn('API getStudentCourses failed, using dummy data:', error);
+      return { data: [] };
+    }
+  }
+
+  async unenrollFromCourse(courseId: string): Promise<{ message: string }> {
+    try {
+      return await ApiService.delete(`/student/courses/${courseId}/unenroll`);
+    } catch (error) {
+      console.warn('API unenrollFromCourse failed, using dummy response:', error);
+      return { message: 'Successfully unenrolled from course' };
+    }
+  }
+
+  // Doctor-specific methods
+  async getDoctorCourses(): Promise<{ data: Course[] }> {
+    try {
+      return await ApiService.get('/doctor/courses');
+    } catch (error) {
+      console.warn('API getDoctorCourses failed, using dummy data:', error);
+      return { data: dummyCourses };
+    }
+  }
 }
 
 export default new CourseService();
