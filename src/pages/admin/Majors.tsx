@@ -33,6 +33,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import MajorService from "@/services/major.service";
 import { Loader2, Search, Plus, Edit, Trash2, School, Users, BookOpen } from "lucide-react";
+import { CreateMajorData, UpdateMajorData, Major } from "@/types/major";
 
 const AdminMajors = () => {
   const { toast } = useToast();
@@ -40,8 +41,8 @@ const AdminMajors = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedMajor, setSelectedMajor] = useState(null);
-  const [formData, setFormData] = useState({
+  const [selectedMajor, setSelectedMajor] = useState<Major | null>(null);
+  const [formData, setFormData] = useState<CreateMajorData>({
     name: "",
     code: "",
     description: "",
@@ -66,7 +67,7 @@ const AdminMajors = () => {
   });
 
   const createMajorMutation = useMutation({
-    mutationFn: (majorData) => MajorService.createMajor(majorData),
+    mutationFn: (majorData: CreateMajorData) => MajorService.createMajor(majorData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-majors"] });
       setIsCreateDialogOpen(false);
@@ -86,7 +87,7 @@ const AdminMajors = () => {
   });
 
   const updateMajorMutation = useMutation({
-    mutationFn: ({ id, data }) => MajorService.updateMajor(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateMajorData }) => MajorService.updateMajor(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-majors"] });
       setIsEditDialogOpen(false);
@@ -106,7 +107,7 @@ const AdminMajors = () => {
   });
 
   const deleteMajorMutation = useMutation({
-    mutationFn: (majorId) => MajorService.deleteMajor(majorId),
+    mutationFn: (majorId: string) => MajorService.deleteMajor(majorId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-majors"] });
       toast({
@@ -139,17 +140,19 @@ const AdminMajors = () => {
     setSelectedMajor(null);
   };
 
-  const handleCreateSubmit = (e) => {
+  const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createMajorMutation.mutate(formData);
   };
 
-  const handleEditSubmit = (e) => {
+  const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateMajorMutation.mutate({ id: selectedMajor.id, data: formData });
+    if (selectedMajor) {
+      updateMajorMutation.mutate({ id: selectedMajor.id, data: formData });
+    }
   };
 
-  const handleEdit = (major) => {
+  const handleEdit = (major: Major) => {
     setSelectedMajor(major);
     setFormData({
       name: major.name,
@@ -160,7 +163,7 @@ const AdminMajors = () => {
     setIsEditDialogOpen(true);
   };
 
-  const handleDelete = (majorId) => {
+  const handleDelete = (majorId: string) => {
     if (confirm("Are you sure you want to delete this major?")) {
       deleteMajorMutation.mutate(majorId);
     }

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,22 +40,22 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import UserService, { UserFilters } from "@/services/user.service";
 import MajorService from "@/services/major.service";
 import { Loader2, Search, Plus, Edit, Trash2, Shield, Users, UserCheck } from "lucide-react";
-import { CreateUserData, UpdateUserData } from "@/types/user";
+import { CreateUserData, UpdateUserData, User } from "@/types/user";
 
 const AdminUsers = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState<UserFilters['role'] | "">("");
+  const [roleFilter, setRoleFilter] = useState<"" | "student" | "doctor" | "admin">("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [formData, setFormData] = useState({
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [formData, setFormData] = useState<CreateUserData>({
     name: "",
     email: "",
     password: "",
-    role: "",
-    gender: "",
+    role: "student",
+    gender: "male",
     major_id: ""
   });
 
@@ -157,28 +158,30 @@ const AdminUsers = () => {
       name: "",
       email: "",
       password: "",
-      role: "",
-      gender: "",
+      role: "student",
+      gender: "male",
       major_id: ""
     });
     setSelectedUser(null);
   };
 
-  const handleCreateSubmit = (e) => {
+  const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createUserMutation.mutate(formData as CreateUserData);
+    createUserMutation.mutate(formData);
   };
 
-  const handleEditSubmit = (e) => {
+  const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const updateData = { ...formData };
-    if (!updateData.password) {
-      delete updateData.password;
+    if (selectedUser) {
+      const updateData = { ...formData };
+      if (!updateData.password) {
+        delete updateData.password;
+      }
+      updateUserMutation.mutate({ id: selectedUser.id, data: updateData as UpdateUserData });
     }
-    updateUserMutation.mutate({ id: selectedUser.id, data: updateData as UpdateUserData });
   };
 
-  const handleEdit = (user) => {
+  const handleEdit = (user: User) => {
     setSelectedUser(user);
     setFormData({
       name: user.name,
@@ -191,13 +194,13 @@ const AdminUsers = () => {
     setIsEditDialogOpen(true);
   };
 
-  const handleDelete = (userId) => {
+  const handleDelete = (userId: string) => {
     if (confirm("Are you sure you want to delete this user?")) {
       deleteUserMutation.mutate(userId);
     }
   };
 
-  const getRoleBadgeVariant = (role) => {
+  const getRoleBadgeVariant = (role: string) => {
     switch (role) {
       case 'admin':
         return 'destructive';
@@ -232,7 +235,7 @@ const AdminUsers = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Select value={roleFilter} onValueChange={setRoleFilter}>
+          <Select value={roleFilter} onValueChange={(value: "" | "student" | "doctor" | "admin") => setRoleFilter(value)}>
             <SelectTrigger className="w-[150px]">
               <SelectValue placeholder="Filter by role" />
             </SelectTrigger>

@@ -19,9 +19,7 @@ export type * from './auth.service';
 export type { 
   UserFilters, 
   PaginationParams, 
-  UserStats as UserServiceStats,
-  CreateUserData, 
-  UpdateUserData 
+  UserStats as UserServiceStats
 } from './user.service';
 export type * from './course.service';
 export type { 
@@ -42,3 +40,6 @@ export type * from './major.service';
 export type * from './student.service';
 export type * from './grade.service';
 export type * from './doctor.service';
+
+// Re-export user types from the proper location
+export type { CreateUserData, UpdateUserData } from '../types/user';
