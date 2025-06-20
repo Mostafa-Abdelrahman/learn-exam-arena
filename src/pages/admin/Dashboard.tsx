@@ -460,29 +460,23 @@ const AdminDashboard = () => {
           <CardTitle>Major Distribution</CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoadingMajorStats ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="p-4 border rounded-lg">
+              <div className="text-sm font-medium text-muted-foreground">Total Students in Majors</div>
+              <div className="text-2xl font-bold">{majorStats?.total_students || 0}</div>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="p-4 border rounded-lg">
-                <div className="text-sm font-medium text-muted-foreground">Total Students in Majors</div>
-                <div className="text-2xl font-bold">{majorStats?.total_students || 0}</div>
-              </div>
-              <div className="p-4 border rounded-lg">
-                <div className="text-sm font-medium text-muted-foreground">Total Courses in Majors</div>
-                <div className="text-2xl font-bold">{majorStats?.total_courses || 0}</div>
-              </div>
-              <div className="p-4 border rounded-lg">
-                <div className="text-sm font-medium text-muted-foreground">Average Students per Major</div>
-                <div className="text-2xl font-bold">
-                  {majorStats?.total_majors ? 
-                    Math.round(majorStats.total_students / majorStats.total_majors) : 0}
-                </div>
+            <div className="p-4 border rounded-lg">
+              <div className="text-sm font-medium text-muted-foreground">Total Courses in Majors</div>
+              <div className="text-2xl font-bold">{majorStats?.total_courses || 0}</div>
+            </div>
+            <div className="p-4 border rounded-lg">
+              <div className="text-sm font-medium text-muted-foreground">Average Students per Major</div>
+              <div className="text-2xl font-bold">
+                {majorStats?.total_majors ? 
+                  Math.round(majorStats.total_students / majorStats.total_majors) : 0}
               </div>
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
 

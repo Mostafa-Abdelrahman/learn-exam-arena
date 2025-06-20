@@ -19,7 +19,7 @@ export type * from './auth.service';
 export type { 
   UserFilters, 
   PaginationParams, 
-  UserStats as UserServiceStats
+  UserStats
 } from './user.service';
 export type * from './course.service';
 export type { 

@@ -8,6 +8,28 @@ export interface UserFilters {
   major_id?: string;
 }
 
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
+}
+
+export interface UserStats {
+  total_users: number;
+  active_users: number;
+  new_users_this_month: number;
+  users_by_role: {
+    students: number;
+    doctors: number;
+    admins: number;
+  };
+  users_by_major: Array<{
+    major_name: string;
+    user_count: number;
+  }>;
+}
+
 class UserService {
   // Get all users with optional filters
   async getAllUsers(filters?: UserFilters): Promise<{ data: User[] }> {
@@ -25,6 +47,34 @@ class UserService {
     }
 
     return { data: users };
+  }
+
+  // Get user statistics
+  async getUserStats(): Promise<{ data: UserStats }> {
+    LocalStorageService.initializeData();
+    const users = LocalStorageService.getUsers();
+    const majors = LocalStorageService.getMajors();
+
+    const usersByRole = {
+      students: users.filter(u => u.role === 'student').length,
+      doctors: users.filter(u => u.role === 'doctor').length,
+      admins: users.filter(u => u.role === 'admin').length
+    };
+
+    const usersByMajor = majors.map(major => ({
+      major_name: major.name,
+      user_count: users.filter(u => (u as any).major_id === major.id).length
+    }));
+
+    return {
+      data: {
+        total_users: users.length,
+        active_users: users.filter(u => u.status === 'active').length,
+        new_users_this_month: Math.floor(Math.random() * 100), // Mock data
+        users_by_role: usersByRole,
+        users_by_major: usersByMajor
+      }
+    };
   }
 
   // Create new user
