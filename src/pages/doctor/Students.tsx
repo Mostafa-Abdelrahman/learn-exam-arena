@@ -51,7 +51,7 @@ const DoctorStudents = () => {
   const filteredStudents = students?.filter(student =>
     student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (student.major?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+    ((student as any).major?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
   const getGradeColor = (grade: number) => {
@@ -147,4 +147,3 @@ const DoctorStudents = () => {
 };
 
 export default DoctorStudents;
-
