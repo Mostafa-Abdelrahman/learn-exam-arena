@@ -13,6 +13,7 @@ interface Course {
   doctor_id: string;
   student_count: number;
   status: 'active' | 'inactive';
+  academic_year: string;
   created_at: string;
   updated_at?: string;
 }
@@ -78,6 +79,7 @@ export const dummyCourses: Course[] = [
     doctor_id: "doctor-1",
     student_count: 25,
     status: "active",
+    academic_year: "2024-2025",
     created_at: "2024-02-01T10:00:00Z"
   },
   {
@@ -91,6 +93,7 @@ export const dummyCourses: Course[] = [
     doctor_id: "doctor-2",
     student_count: 20,
     status: "active",
+    academic_year: "2024-2025",
     created_at: "2024-02-02T10:00:00Z"
   },
   {
@@ -104,6 +107,7 @@ export const dummyCourses: Course[] = [
     doctor_id: "doctor-3",
     student_count: 18,
     status: "active",
+    academic_year: "2024-2025",
     created_at: "2024-02-03T10:00:00Z"
   },
   {
@@ -117,6 +121,7 @@ export const dummyCourses: Course[] = [
     doctor_id: "doctor-1", 
     student_count: 22,
     status: "active",
+    academic_year: "2024-2025",
     created_at: "2024-02-04T10:00:00Z"
   },
   {
@@ -130,6 +135,7 @@ export const dummyCourses: Course[] = [
     doctor_id: "doctor-4",
     student_count: 15,
     status: "active", 
+    academic_year: "2024-2025",
     created_at: "2024-02-05T10:00:00Z"
   }
 ];

@@ -1,8 +1,7 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, FileText, LogOut, Loader2 } from "lucide-react";
+import { Users, FileText, LogOut, Loader2, User } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,7 +48,9 @@ const EnrolledCoursesList = ({
                       <CardTitle className="text-lg">{enrollment.course.course_name}</CardTitle>
                       <CardDescription>{enrollment.course.course_code}</CardDescription>
                     </div>
-                    <Badge variant="default">Enrolled</Badge>
+                    <Badge variant={enrollment.status === 'active' ? 'default' : 'secondary'}>
+                      {enrollment.status}
+                    </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -69,6 +70,12 @@ const EnrolledCoursesList = ({
                         <FileText className="h-4 w-4 mr-1" />
                         {enrollment.course.exam_count || 0}
                       </div>
+                      {enrollment.course.doctor && (
+                        <div className="flex items-center">
+                          <User className="h-4 w-4 mr-1" />
+                          {enrollment.course.doctor.name}
+                        </div>
+                      )}
                     </div>
                   </div>
                   

@@ -1,6 +1,6 @@
-
 import ApiService from './api.service';
 import { dummyCourses } from '@/data/dummy-comprehensive';
+import AuthService from './auth.service';
 
 export interface Course {
   id: string;
@@ -10,11 +10,11 @@ export interface Course {
   credits: number;
   semester: string;
   major_id: string;
-  doctor_id: string;
-  student_count: number;
+  doctor_id?: string;
   status: 'active' | 'inactive';
+  academic_year: string;
+  student_count?: number;
   created_at: string;
-  updated_at?: string;
 }
 
 export interface CreateCourseData {
@@ -24,8 +24,9 @@ export interface CreateCourseData {
   credits: number;
   semester: string;
   major_id: string;
-  doctor_id: string;
-  status?: 'active' | 'inactive';
+  doctor_id?: string;
+  status: 'active' | 'inactive';
+  academic_year: string;
 }
 
 export interface UpdateCourseData {
@@ -37,12 +38,15 @@ export interface UpdateCourseData {
   major_id?: string;
   doctor_id?: string;
   status?: 'active' | 'inactive';
+  academic_year?: string;
 }
 
 class CourseService {
   async getAllCourses(): Promise<{ data: Course[] }> {
     try {
-      return await ApiService.get('/courses');
+      const user = await AuthService.getCurrentUser();
+      const endpoint = user?.role === 'admin' ? '/admin/courses' : '/courses';
+      return await ApiService.get(endpoint);
     } catch (error) {
       console.warn('API getAllCourses failed, using dummy data:', error);
       return { data: dummyCourses };
@@ -69,8 +73,7 @@ class CourseService {
         ...courseData,
         status: courseData.status || 'active',
         student_count: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        created_at: new Date().toISOString()
       };
       return { data: newCourse, message: 'Course created successfully' };
     }

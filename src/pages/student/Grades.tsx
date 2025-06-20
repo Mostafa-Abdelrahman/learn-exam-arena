@@ -180,7 +180,7 @@ const StudentGrades = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredGrades.map((gradeEntry) => (
-                    <TableRow key={gradeEntry.grade_id}>
+                    <TableRow key={`grade-${gradeEntry.grade_id}`}>
                       <TableCell className="font-medium">
                         {gradeEntry.exam.name}
                       </TableCell>

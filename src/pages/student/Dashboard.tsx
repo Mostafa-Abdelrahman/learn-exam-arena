@@ -175,7 +175,7 @@ const StudentDashboard = () => {
           <CardContent>
             <div className="space-y-3">
               {upcomingExams.slice(0, 3).map((exam) => (
-                <div key={exam.id} className="flex justify-between items-center p-3 bg-white rounded-md border">
+                <div key={`upcoming-exam-${exam.id}`} className="flex justify-between items-center p-3 bg-white rounded-md border">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <p className="font-medium">{exam.name}</p>
@@ -230,7 +230,7 @@ const StudentDashboard = () => {
             {isLoadingCourses ? (
               <div className="space-y-3">
                 {Array(3).fill(0).map((_, i) => (
-                  <div key={i} className="flex justify-between items-center">
+                  <div key={`skeleton-${i}`} className="flex justify-between items-center">
                     <div className="space-y-1">
                       <Skeleton className="h-4 w-32" />
                       <Skeleton className="h-3 w-24" />
@@ -242,11 +242,11 @@ const StudentDashboard = () => {
             ) : enrolledCourses.length > 0 ? (
               <div className="space-y-3">
                 {enrolledCourses.slice(0, 3).map((studentCourse: any) => (
-                  <div key={studentCourse.course_id} className="flex justify-between items-center">
+                  <div key={`enrolled-course-${studentCourse.course_id}`} className="flex justify-between items-center">
                     <div>
                       <p className="font-medium">{studentCourse.course.course_name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {studentCourse.course.course_code} • Grade: N/A
+                        {studentCourse.course.course_code} • {studentCourse.course.doctor?.name || 'No instructor assigned'}
                       </p>
                     </div>
                     <Button 
@@ -258,13 +258,15 @@ const StudentDashboard = () => {
                     </Button>
                   </div>
                 ))}
-                <Button 
-                  variant="ghost" 
-                  className="w-full mt-2"
-                  onClick={() => navigate("/student/courses")}
-                >
-                  View All Courses
-                </Button>
+                {enrolledCourses.length > 3 && (
+                  <Button 
+                    variant="ghost" 
+                    className="w-full mt-2"
+                    onClick={() => navigate("/student/courses")}
+                  >
+                    View All Courses
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="text-center text-muted-foreground py-4">
@@ -294,7 +296,7 @@ const StudentDashboard = () => {
             {isLoadingResults ? (
               <div className="space-y-3">
                 {Array(3).fill(0).map((_, i) => (
-                  <div key={i} className="flex justify-between items-center">
+                  <div key={`skeleton-${i}`} className="flex justify-between items-center">
                     <div className="space-y-1">
                       <Skeleton className="h-4 w-32" />
                       <Skeleton className="h-3 w-24" />
@@ -306,7 +308,7 @@ const StudentDashboard = () => {
             ) : recentResults.length > 0 ? (
               <div className="space-y-3">
                 {recentResults.map((result) => (
-                  <div key={result.id} className="flex justify-between items-center">
+                  <div key={`result-${result.id}`} className="flex justify-between items-center">
                     <div className="flex-1">
                       <p className="font-medium">{result.exam_name}</p>
                       <p className="text-sm text-muted-foreground">{result.course_name}</p>

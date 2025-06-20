@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,7 +60,7 @@ const AdminMajors = () => {
     queryFn: async () => {
       try {
         const response = await MajorService.getAllMajors();
-        return response.data;
+        return response.data || [];
       } catch (error) {
         toast({
           title: "Error",

@@ -1,4 +1,3 @@
-
 export const dummySystemStats = {
   users: {
     total: 1250,
@@ -27,6 +26,7 @@ export const dummyUsers = [
     role: "student" as const,
     gender: "male" as const,
     created_at: "2024-01-15T10:30:00Z",
+    updated_at: "2024-01-15T10:30:00Z",
     last_login: "2024-01-29T09:15:00Z",
     status: "active" as const
   },
@@ -37,6 +37,7 @@ export const dummyUsers = [
     role: "doctor" as const,
     gender: "female" as const,
     created_at: "2023-08-10T08:00:00Z",
+    updated_at: "2023-08-10T08:00:00Z",
     last_login: "2024-01-29T08:30:00Z",
     status: "active" as const
   },
@@ -47,6 +48,7 @@ export const dummyUsers = [
     role: "student" as const,
     gender: "female" as const,
     created_at: "2024-01-10T14:20:00Z",
+    updated_at: "2024-01-10T14:20:00Z",
     last_login: "2024-01-28T16:45:00Z",
     status: "active" as const
   },
@@ -57,6 +59,7 @@ export const dummyUsers = [
     role: "doctor" as const,
     gender: "male" as const,
     created_at: "2023-09-15T10:00:00Z",
+    updated_at: "2023-09-15T10:00:00Z",
     last_login: "2024-01-28T12:30:00Z",
     status: "active" as const
   }

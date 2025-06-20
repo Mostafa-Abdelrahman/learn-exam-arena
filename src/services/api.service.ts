@@ -1,4 +1,3 @@
-
 import axios, { AxiosResponse } from 'axios';
 
 // Configure base URL and timeout - use Vite's import.meta.env instead of process.env
@@ -35,7 +34,8 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user_data');
-      window.location.href = '/login';
+      // Instead of using window.location.href, we'll let the component handle navigation
+      return Promise.reject(error);
     }
     return Promise.reject(error);
   }

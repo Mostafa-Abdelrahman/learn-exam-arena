@@ -1,4 +1,3 @@
-
 import ApiService from './api.service';
 import { dummyGrades } from '@/data/dummy-grades';
 import { dummyStudentCourses } from '@/data/dummy-student-courses';
@@ -64,7 +63,9 @@ class StudentService {
   // Enroll in course
   async enrollInCourse(courseId: string): Promise<{ message: string }> {
     try {
-      return await ApiService.post(`/student/courses/${courseId}/enroll`);
+      // Remove any prefix from the course ID
+      const cleanCourseId = courseId.replace(/^course-/, '');
+      return await ApiService.post(`/student/courses/${cleanCourseId}/enroll`);
     } catch (error) {
       console.warn('API enrollInCourse failed, using dummy response:', error);
       return { message: 'Successfully enrolled in course' };

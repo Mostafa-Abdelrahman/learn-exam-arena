@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -129,7 +130,7 @@ const DoctorQuestions = () => {
       }
 
       // Create the question
-      const { data: questionData } = await DoctorService.createQuestion({
+      const { data: questionData, message } = await DoctorService.createQuestion({
         text: questionText,
         type: questionType,
         chapter: chapter || null,
@@ -152,7 +153,7 @@ const DoctorQuestions = () => {
 
       toast({
         title: "Success",
-        description: "Question added successfully",
+        description: message || "Question added successfully",
       });
 
       resetForm();
@@ -219,7 +220,7 @@ const DoctorQuestions = () => {
     if (!selectedQuestion) return;
 
     try {
-      await DoctorService.updateQuestion(selectedQuestion.id, {
+      const { message } = await DoctorService.updateQuestion(selectedQuestion.id, {
         text: questionText,
         chapter: chapter || null,
         difficulty: difficulty || null,
@@ -244,7 +245,7 @@ const DoctorQuestions = () => {
 
       toast({
         title: "Success",
-        description: "Question updated successfully",
+        description: message || "Question updated successfully",
       });
 
       resetForm();
@@ -296,8 +297,8 @@ const DoctorQuestions = () => {
 
   const filteredQuestions = questions.filter(
     q => 
-      q.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (q.chapter && q.chapter.toLowerCase().includes(searchTerm.toLowerCase()))
+      (q.text?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (q.chapter?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -430,6 +431,9 @@ const DoctorQuestions = () => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Add New Question</DialogTitle>
+            <DialogDescription>
+              Create a new question for your question bank. You can add multiple choice or written answer questions.
+            </DialogDescription>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
@@ -553,6 +557,9 @@ const DoctorQuestions = () => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Question</DialogTitle>
+            <DialogDescription>
+              Modify the question details, including text, difficulty, and answer choices.
+            </DialogDescription>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">

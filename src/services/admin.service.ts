@@ -1,6 +1,6 @@
-
 import ApiService from './api.service';
-import { dummySystemStats } from '@/data/dummy-admin';
+import { dummySystemStats, dummyUsers } from '@/data/dummy-admin';
+import { User } from '@/types/user';
 
 export interface SystemStats {
   users: {
@@ -34,12 +34,32 @@ class AdminService {
   }
 
   // Get all users
-  async getAllUsers(): Promise<{ data: any[] }> {
+  async getAllUsers(): Promise<{ data: User[] }> {
     try {
       return await ApiService.get('/admin/users');
     } catch (error) {
       console.warn('API getAllUsers failed, using dummy data:', error);
-      return { data: [] };
+      return { data: dummyUsers };
+    }
+  }
+
+  // Get all doctors
+  async getAllDoctors(): Promise<{ data: User[] }> {
+    try {
+      return await ApiService.get('/admin/doctors');
+    } catch (error) {
+      console.warn('API getAllDoctors failed, using dummy data:', error);
+      return { data: dummyUsers.filter(user => user.role === 'doctor') };
+    }
+  }
+
+  // Get all students
+  async getAllStudents(): Promise<{ data: User[] }> {
+    try {
+      return await ApiService.get('/admin/students');
+    } catch (error) {
+      console.warn('API getAllStudents failed, using dummy data:', error);
+      return { data: dummyUsers.filter(user => user.role === 'student') };
     }
   }
 

@@ -1,5 +1,6 @@
 import ApiService from './api.service';
 import { dummyUsers, dummyAuthResponse } from '@/data/dummy-auth';
+import { useRouter } from 'vue-router';
 
 export interface LoginCredentials {
   email: string;
@@ -52,24 +53,34 @@ export interface PasswordReset {
   password_confirmation: string;
 }
 
-class AuthService {
+export class AuthService {
+  private static instance: AuthService;
+  private router = useRouter();
+
+  private constructor() {}
+
+  public static getInstance(): AuthService {
+    if (!AuthService.instance) {
+      AuthService.instance = new AuthService();
+    }
+    return AuthService.instance;
+  }
+
   // Authentication
-  async login(credentials: LoginCredentials): Promise<AuthResponse> {
+  async login(email: string, password: string): Promise<AuthResponse> {
     try {
-      const response = await ApiService.post<AuthResponse>('/auth/login', credentials);
-      
+      const response = await ApiService.post<AuthResponse>('/auth/login', { email, password });
       if (response.token) {
         localStorage.setItem('auth_token', response.token);
         localStorage.setItem('user_data', JSON.stringify(response.user));
+        return response;
       }
-      
-      return response;
-    } catch (error) {
-      console.warn('API login failed, using dummy data:', error);
-      // Return dummy auth response for development
-      localStorage.setItem('auth_token', dummyAuthResponse.token);
-      localStorage.setItem('user_data', JSON.stringify(dummyAuthResponse.user));
-      return dummyAuthResponse;
+      throw new Error('Invalid response from server');
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        this.router.push('/login');
+      }
+      throw error;
     }
   }
 
@@ -214,4 +225,4 @@ class AuthService {
   }
 }
 
-export default new AuthService();
+export default AuthService.getInstance();

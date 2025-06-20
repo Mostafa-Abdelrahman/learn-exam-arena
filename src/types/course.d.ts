@@ -1,15 +1,16 @@
-
 declare interface Course {
   id: string;
   name: string;
   code: string;
   description?: string;
+  credits: number;
+  semester: string;
+  major_id: string;
   doctor_id?: string;
-  major_id?: string;
+  status: 'active' | 'inactive';
+  academic_year: string;
   student_count?: number;
-  enrolled_students?: number;
-  exam_count?: number;
-  created_at?: string;
+  created_at: string;
   updated_at?: string;
 }
 
@@ -18,6 +19,7 @@ declare interface StudentCourse {
   student_id: string;
   course_id: string;
   enrollment_date: string;
+  status: 'active' | 'inactive' | 'completed' | 'dropped';
   course: {
     course_id: string;
     course_name: string;
@@ -25,5 +27,10 @@ declare interface StudentCourse {
     description?: string;
     student_count?: number;
     exam_count?: number;
+    doctor?: {
+      id: string;
+      name: string;
+      email: string;
+    };
   };
 }

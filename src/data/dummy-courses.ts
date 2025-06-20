@@ -1,4 +1,3 @@
-
 export const dummyCourses = [
   {
     id: "course-1",
@@ -17,6 +16,7 @@ export const dummyCourses = [
     },
     enrolled_students: 45,
     max_students: 50,
+    academic_year: "2024-2025",
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-15T10:30:00Z"
   },
@@ -37,6 +37,7 @@ export const dummyCourses = [
     },
     enrolled_students: 32,
     max_students: 40,
+    academic_year: "2024-2025",
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-15T10:30:00Z"
   },
@@ -57,6 +58,7 @@ export const dummyCourses = [
     },
     enrolled_students: 28,
     max_students: 35,
+    academic_year: "2024-2025",
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-15T10:30:00Z"
   }

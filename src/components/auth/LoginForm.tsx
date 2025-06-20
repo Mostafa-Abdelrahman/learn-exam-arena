@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -39,7 +38,7 @@ const LoginForm = ({ onForgotPassword, onSwitchToSignup }: LoginFormProps) => {
     setLoading(true);
     
     try {
-      const response = await AuthService.login({ email, password });
+      const response = await AuthService.login(email, password);
       
       // Store token and user data
       localStorage.setItem('token', response.token);

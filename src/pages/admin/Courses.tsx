@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,7 +57,8 @@ const AdminCourses = () => {
     semester: "",
     major_id: "",
     doctor_id: "",
-    status: "active"
+    status: "active",
+    academic_year: new Date().getFullYear().toString()
   });
 
   const { data: courses, isLoading } = useQuery({
@@ -66,7 +66,7 @@ const AdminCourses = () => {
     queryFn: async () => {
       try {
         const response = await CourseService.getAllCourses();
-        return response.data;
+        return response.data || [];
       } catch (error) {
         toast({
           title: "Error",
@@ -83,8 +83,9 @@ const AdminCourses = () => {
     queryFn: async () => {
       try {
         const response = await MajorService.getAllMajors();
-        return response.data;
+        return response.data || [];
       } catch (error) {
+        console.warn('API getAllMajors failed, using dummy data:', error);
         return [];
       }
     },
@@ -95,8 +96,9 @@ const AdminCourses = () => {
     queryFn: async () => {
       try {
         const response = await UserService.getAllUsers({ role: 'doctor' });
-        return response.data;
+        return response.data || [];
       } catch (error) {
+        console.warn('API getAllUsers failed, using dummy data:', error);
         return [];
       }
     },
@@ -175,7 +177,8 @@ const AdminCourses = () => {
       semester: "",
       major_id: "",
       doctor_id: "",
-      status: "active"
+      status: "active",
+      academic_year: new Date().getFullYear().toString()
     });
     setSelectedCourse(null);
   };
@@ -202,7 +205,8 @@ const AdminCourses = () => {
       semester: course.semester,
       major_id: course.major_id,
       doctor_id: course.doctor_id,
-      status: course.status
+      status: course.status,
+      academic_year: course.academic_year
     });
     setIsEditDialogOpen(true);
   };
@@ -332,6 +336,16 @@ const AdminCourses = () => {
                         <SelectItem value="inactive">Inactive</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="academic_year">Academic Year</Label>
+                    <Input
+                      id="academic_year"
+                      value={formData.academic_year}
+                      onChange={(e) => setFormData({...formData, academic_year: e.target.value})}
+                      placeholder="e.g., 2024-2025"
+                      required
+                    />
                   </div>
                 </div>
                 <DialogFooter>
@@ -516,6 +530,16 @@ const AdminCourses = () => {
                     <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-academic_year">Academic Year</Label>
+                <Input
+                  id="edit-academic_year"
+                  value={formData.academic_year}
+                  onChange={(e) => setFormData({...formData, academic_year: e.target.value})}
+                  placeholder="e.g., 2024-2025"
+                  required
+                />
               </div>
             </div>
             <DialogFooter>
