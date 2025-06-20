@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
@@ -36,6 +35,7 @@ import UserService, { UserFilters } from "@/services/user.service";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Users, BookOpen, GraduationCap, Database, Search, Plus, Edit, Trash2, Shield, UserCheck } from 'lucide-react';
 import { CreateUserData, UpdateUserData, User } from "@/types/user";
+import { useUsers, useSystemStats, useMajorStats } from '@/hooks/useLocalStorage';
 
 interface ActivityItem {
   id: string;
@@ -62,48 +62,10 @@ const AdminDashboard = () => {
     major_id: ""
   });
 
-  const { data: stats, isLoading: isLoadingStats } = useQuery({
-    queryKey: ["admin-system-stats"],
-    queryFn: async () => {
-      try {
-        return await AdminService.getSystemStats();
-      } catch (error) {
-        console.error('Failed to fetch system stats:', error);
-        return null;
-      }
-    },
-  });
-
-  const { data: majorStats, isLoading: isLoadingMajorStats } = useQuery({
-    queryKey: ["admin-major-stats"],
-    queryFn: async () => {
-      try {
-        const response = await MajorService.getMajorStats();
-        return response.data;
-      } catch (error) {
-        console.error('Failed to fetch major stats:', error);
-        return null;
-      }
-    },
-  });
-
-  const { data: users, isLoading: isLoadingUsers } = useQuery({
-    queryKey: ["admin-users", roleFilter],
-    queryFn: async () => {
-      try {
-        const filters: UserFilters = roleFilter ? { role: roleFilter } : {};
-        const response = await UserService.getAllUsers(filters);
-        return response.data;
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to fetch users",
-          variant: "destructive",
-        });
-        return [];
-      }
-    },
-  });
+  // Use real-time local storage hooks
+  const users = useUsers();
+  const stats = useSystemStats();
+  const majorStats = useMajorStats();
 
   const { data: majors } = useQuery({
     queryKey: ["majors-for-users"],
@@ -185,11 +147,15 @@ const AdminDashboard = () => {
     setRecentActivities(mockActivities);
   }, []);
 
-  const filteredUsers = users?.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const filteredUsers = users?.filter(user => {
+    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.role.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesRole = !roleFilter || user.role === roleFilter;
+    
+    return matchesSearch && matchesRole;
+  }) || [];
 
   const resetForm = () => {
     setFormData({
@@ -227,7 +193,7 @@ const AdminDashboard = () => {
       password: "",
       role: user.role,
       gender: user.gender,
-      major_id: user.major_id || ""
+      major_id: (user as any).major_id || ""
     });
     setIsEditDialogOpen(true);
   };
@@ -436,61 +402,55 @@ const AdminDashboard = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {isLoadingUsers ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : (
-            <div className="w-full relative overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+          <div className="w-full relative overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.slice(0, 10).map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      <Badge variant={getRoleBadgeVariant(user.role)}>
+                        {user.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
+                        {user.status || 'active'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEdit(user)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleDelete(user.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.slice(0, 10).map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={getRoleBadgeVariant(user.role)}>
-                          {user.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
-                          {user.status || 'active'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleEdit(user)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleDelete(user.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

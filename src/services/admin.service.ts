@@ -1,5 +1,5 @@
-import ApiService from './api.service';
-import { dummySystemStats, dummyUsers } from '@/data/dummy-admin';
+
+import LocalStorageService from './local-storage.service';
 import { User } from '@/types/user';
 
 export interface SystemStats {
@@ -25,75 +25,56 @@ export interface SystemStats {
 class AdminService {
   // Get system statistics
   async getSystemStats(): Promise<SystemStats> {
-    try {
-      return await ApiService.get('/admin/system-stats');
-    } catch (error) {
-      console.warn('API getSystemStats failed, using dummy data:', error);
-      return dummySystemStats;
-    }
+    // Initialize data if needed
+    LocalStorageService.initializeData();
+    return LocalStorageService.getSystemStats();
   }
 
   // Get all users
   async getAllUsers(): Promise<{ data: User[] }> {
-    try {
-      return await ApiService.get('/admin/users');
-    } catch (error) {
-      console.warn('API getAllUsers failed, using dummy data:', error);
-      return { data: dummyUsers };
-    }
+    LocalStorageService.initializeData();
+    return { data: LocalStorageService.getUsers() };
   }
 
   // Get all doctors
   async getAllDoctors(): Promise<{ data: User[] }> {
-    try {
-      return await ApiService.get('/admin/doctors');
-    } catch (error) {
-      console.warn('API getAllDoctors failed, using dummy data:', error);
-      return { data: dummyUsers.filter(user => user.role === 'doctor') };
-    }
+    LocalStorageService.initializeData();
+    const users = LocalStorageService.getUsers();
+    return { data: users.filter(user => user.role === 'doctor') };
   }
 
   // Get all students
   async getAllStudents(): Promise<{ data: User[] }> {
-    try {
-      return await ApiService.get('/admin/students');
-    } catch (error) {
-      console.warn('API getAllStudents failed, using dummy data:', error);
-      return { data: dummyUsers.filter(user => user.role === 'student') };
-    }
+    LocalStorageService.initializeData();
+    const users = LocalStorageService.getUsers();
+    return { data: users.filter(user => user.role === 'student') };
   }
 
   // Get all majors
   async getAllMajors(): Promise<{ data: any[] }> {
-    try {
-      return await ApiService.get('/admin/majors');
-    } catch (error) {
-      console.warn('API getAllMajors failed, using dummy data:', error);
-      return { data: [] };
-    }
+    LocalStorageService.initializeData();
+    return { data: LocalStorageService.getMajors() };
   }
 
   // Delete user
   async deleteUser(userId: string): Promise<{ message: string }> {
-    try {
-      return await ApiService.delete(`/admin/users/${userId}`);
-    } catch (error) {
-      console.warn('API deleteUser failed, using dummy response:', error);
+    const success = LocalStorageService.deleteUser(userId);
+    if (success) {
       return { message: 'User deleted successfully' };
     }
+    throw new Error('User not found');
   }
 
   // Update user
   async updateUser(userId: string, userData: any): Promise<{ message: string; user: any }> {
-    try {
-      return await ApiService.put(`/admin/users/${userId}`, userData);
-    } catch (error) {
-      console.warn('API updateUser failed, using dummy response:', error);
+    const updatedUser = LocalStorageService.updateUser(userId, userData);
+    if (updatedUser) {
       return {
         message: 'User updated successfully',
-        user: { id: userId, ...userData, updated_at: new Date().toISOString() }
+        user: updatedUser
       };
     }
+    throw new Error('User not found');
   }
 }
 

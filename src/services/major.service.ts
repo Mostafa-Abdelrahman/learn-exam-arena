@@ -1,109 +1,59 @@
-import ApiService from './api.service';
-import { Major, CreateMajorData, UpdateMajorData } from '@/types/major';
-import { dummyMajors } from '@/data/dummy-comprehensive';
+
+import LocalStorageService from './local-storage.service';
+import { Major } from '@/types/major';
 
 class MajorService {
+  // Get all majors
   async getAllMajors(): Promise<{ data: Major[] }> {
-    try {
-      return await ApiService.get('/admin/majors');
-    } catch (error) {
-      console.warn('API getAllMajors failed, using dummy data:', error);
-      return { data: dummyMajors };
-    }
+    LocalStorageService.initializeData();
+    return { data: LocalStorageService.getMajors() };
   }
 
-  async getMajorsForDoctors(): Promise<{ data: Major[] }> {
-    try {
-      return await ApiService.get('/admin/majors/for-doctors');
-    } catch (error) {
-      console.warn('API getMajorsForDoctors failed, using dummy data:', error);
-      return { data: dummyMajors };
-    }
+  // Get major statistics
+  async getMajorStats(): Promise<{ data: any }> {
+    LocalStorageService.initializeData();
+    return { data: LocalStorageService.getMajorStats() };
   }
 
-  async getMajorsForStudents(): Promise<{ data: Major[] }> {
-    try {
-      return await ApiService.get('/admin/majors/for-students');
-    } catch (error) {
-      console.warn('API getMajorsForStudents failed, using dummy data:', error);
-      return { data: dummyMajors };
-    }
+  // Create new major
+  async createMajor(majorData: Partial<Major>): Promise<{ data: Major; message: string }> {
+    const newMajor = LocalStorageService.createMajor(majorData);
+    return {
+      data: newMajor,
+      message: 'Major created successfully'
+    };
   }
 
-  async getMajorById(majorId: string): Promise<{ data: Major }> {
-    try {
-      return await ApiService.get(`/admin/majors/${majorId}`);
-    } catch (error) {
-      console.warn('API getMajorById failed, using dummy data:', error);
-      const major = dummyMajors.find(m => m.id === majorId) || dummyMajors[0];
-      return { data: major };
+  // Update major
+  async updateMajor(id: string, majorData: Partial<Major>): Promise<{ data: Major; message: string }> {
+    const updatedMajor = LocalStorageService.updateMajor(id, majorData);
+    if (!updatedMajor) {
+      throw new Error('Major not found');
     }
+    return {
+      data: updatedMajor,
+      message: 'Major updated successfully'
+    };
   }
 
-  async createMajor(majorData: CreateMajorData): Promise<{ data: Major }> {
-    try {
-      return await ApiService.post('/admin/majors', majorData);
-    } catch (error) {
-      console.warn('API createMajor failed, using dummy response:', error);
-      const newMajor: Major = {
-        id: `major-${dummyMajors.length + 1}`,
-        name: majorData.name,
-        code: majorData.code,
-        description: majorData.description,
-        status: majorData.status || 'active',
-        student_count: 0,
-        course_count: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      return { data: newMajor };
+  // Delete major
+  async deleteMajor(id: string): Promise<{ message: string }> {
+    const success = LocalStorageService.deleteMajor(id);
+    if (!success) {
+      throw new Error('Major not found');
     }
+    return { message: 'Major deleted successfully' };
   }
 
-  async updateMajor(majorId: string, majorData: UpdateMajorData): Promise<{ data: Major }> {
-    try {
-      return await ApiService.put(`/admin/majors/${majorId}`, majorData);
-    } catch (error) {
-      console.warn('API updateMajor failed, using dummy response:', error);
-      const existingMajor = dummyMajors.find(m => m.id === majorId) || dummyMajors[0];
-      const updatedMajor = {
-        ...existingMajor,
-        ...majorData,
-        updated_at: new Date().toISOString()
-      };
-      return { data: updatedMajor };
+  // Get major by ID
+  async getMajorById(id: string): Promise<{ data: Major }> {
+    LocalStorageService.initializeData();
+    const majors = LocalStorageService.getMajors();
+    const major = majors.find(m => m.id === id);
+    if (!major) {
+      throw new Error('Major not found');
     }
-  }
-
-  async deleteMajor(majorId: string): Promise<{ message: string }> {
-    try {
-      return await ApiService.delete(`/admin/majors/${majorId}`);
-    } catch (error) {
-      console.warn('API deleteMajor failed, using dummy response:', error);
-      return { message: 'Major deleted successfully' };
-    }
-  }
-
-  async getMajorStats(): Promise<{ data: { total_majors: number; active_majors: number; total_students: number; total_courses: number } }> {
-    try {
-      return await ApiService.get('/admin/majors/stats');
-    } catch (error) {
-      console.warn('API getMajorStats failed, using dummy data:', error);
-      const total_majors = dummyMajors.length;
-      const active_majors = dummyMajors.filter(m => m.status === 'active').length;
-      const total_students = dummyMajors.reduce((acc, m) => acc + (m.student_count || 0), 0);
-      const total_courses = dummyMajors.reduce((acc, m) => acc + (m.course_count || 0), 0);
-
-      return {
-        data: {
-          total_majors,
-          active_majors,
-          total_students,
-          total_courses
-          
-        }
-      };
-    }
+    return { data: major };
   }
 }
 
