@@ -5,7 +5,6 @@ import {
   Home, 
   Book, 
   FileText, 
-  Users, 
   User,
   Settings,
   X,
@@ -16,8 +15,7 @@ import {
   PenTool,
   ClipboardList,
   Award,
-  BarChart,
-  UserPlus
+  BarChart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -42,7 +40,6 @@ const Sidebar: React.FC<SidebarProps> = ({ role, closeSidebar }) => {
           { name: "Courses", path: "/admin/courses", icon: BookOpen },
           { name: "Doctors", path: "/admin/doctors", icon: User },
           { name: "Students", path: "/admin/students", icon: GraduationCap },
-          { name: "Users", path: "/admin/users", icon: Users },
           { name: "Statistics", path: "/admin/statistics", icon: BarChart },
           { name: "Settings", path: "/admin/settings", icon: Settings },
         ];

@@ -19,7 +19,6 @@ import AdminMajors from "@/pages/admin/Majors";
 import AdminCourses from "@/pages/admin/Courses";
 import AdminDoctors from "@/pages/admin/Doctors";
 import AdminStudents from "@/pages/admin/Students";
-import AdminUsers from "@/pages/admin/Users";
 import AdminStatistics from "@/pages/admin/Statistics";
 import AdminSettings from "@/pages/admin/Settings";
 
@@ -81,7 +80,6 @@ const App = () => (
                 <Route path="courses" element={<AdminCourses />} />
                 <Route path="doctors" element={<AdminDoctors />} />
                 <Route path="students" element={<AdminStudents />} />
-                <Route path="users" element={<AdminUsers />} />
                 <Route path="statistics" element={<AdminStatistics />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route index element={<Navigate to="dashboard" replace />} />
