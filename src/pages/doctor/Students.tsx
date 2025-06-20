@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,7 +50,7 @@ const DoctorStudents = () => {
   const filteredStudents = students?.filter(student =>
     student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.major?.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (student.major?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
   const getGradeColor = (grade: number) => {
