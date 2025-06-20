@@ -1,4 +1,5 @@
 
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -111,7 +112,7 @@ const DoctorStudents = () => {
                           {student.email}
                         </div>
                       </TableCell>
-                      <TableCell>{student.major?.name || "N/A"}</TableCell>
+                      <TableCell>{(student as any).major?.name || "N/A"}</TableCell>
                       <TableCell>{(student as any).course?.name || "N/A"}</TableCell>
                       <TableCell>
                         <span className={`font-medium ${getGradeColor((student as any).current_grade || 0)}`}>
@@ -146,3 +147,4 @@ const DoctorStudents = () => {
 };
 
 export default DoctorStudents;
+
