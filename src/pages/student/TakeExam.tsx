@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import { useExamTaking } from "@/hooks/useExamTaking";
 import { Separator } from "@/components/ui/separator";
+import ExamTimer from "@/components/exam/ExamTimer";
+import QuestionNavigation from "@/components/exam/QuestionNavigation";
 
 const TakeExam = () => {
   const { examId } = useParams<{ examId: string }>();
@@ -48,23 +50,6 @@ const TakeExam = () => {
 
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
 
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = seconds % 60;
-    
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-    }
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  const getTimeColor = () => {
-    if (timeRemaining < 300) return "text-red-600"; // Last 5 minutes
-    if (timeRemaining < 900) return "text-orange-600"; // Last 15 minutes
-    return "text-green-600";
-  };
-
   const currentQuestion = questions[currentQuestionIndex];
   const currentAnswer = answers.find(a => a.questionId === currentQuestion?.id);
 
@@ -83,6 +68,10 @@ const TakeExam = () => {
     }
   };
 
+  const handleQuestionSelect = (index: number) => {
+    setCurrentQuestionIndex(index);
+  };
+
   const handleFinishExam = async () => {
     const success = await handleSubmitExam();
     if (success) {
@@ -90,8 +79,9 @@ const TakeExam = () => {
         title: "Exam Submitted Successfully",
         description: "Your answers have been recorded. Results will be available soon.",
       });
-      navigate("/student/results");
+      navigate("/student/exams");
     }
+    setShowSubmitConfirm(false);
   };
 
   if (loading) {
@@ -209,13 +199,7 @@ const TakeExam = () => {
                 <p className="text-sm text-muted-foreground">Progress</p>
                 <p className="font-medium">{answeredCount}/{questions.length}</p>
               </div>
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">Time Remaining</p>
-                <p className={`font-mono text-lg font-bold ${getTimeColor()}`}>
-                  <Clock className="inline mr-1 h-4 w-4" />
-                  {formatTime(timeRemaining)}
-                </p>
-              </div>
+              <ExamTimer timeRemaining={timeRemaining} />
               <Button 
                 variant="destructive" 
                 size="sm"
@@ -252,7 +236,7 @@ const TakeExam = () => {
                   return (
                     <button
                       key={index}
-                      onClick={() => setCurrentQuestionIndex(index)}
+                      onClick={() => handleQuestionSelect(index)}
                       className={`
                         w-8 h-8 rounded text-xs font-medium transition-colors
                         ${isCurrent 
@@ -337,41 +321,16 @@ const TakeExam = () => {
                   </div>
                 )}
 
-                <div className="flex justify-between items-center pt-4">
-                  <Button 
-                    variant="outline" 
-                    onClick={handlePrevious}
-                    disabled={currentQuestionIndex === 0}
-                  >
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Previous
-                  </Button>
-                  
-                  <div className="flex items-center gap-2">
-                    {currentAnswer ? (
-                      <div className="flex items-center gap-2 text-green-600">
-                        <CheckCircle className="h-4 w-4" />
-                        <span className="text-sm">Answered</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-gray-500">
-                        <span className="text-sm">Not answered</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {currentQuestionIndex === questions.length - 1 ? (
-                    <Button onClick={() => setShowSubmitConfirm(true)}>
-                      <Send className="mr-2 h-4 w-4" />
-                      Submit Exam
-                    </Button>
-                  ) : (
-                    <Button onClick={handleNext}>
-                      Next
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
+                <QuestionNavigation
+                  questions={questions}
+                  currentQuestionIndex={currentQuestionIndex}
+                  answers={answers}
+                  onQuestionSelect={handleQuestionSelect}
+                  onPrevious={handlePrevious}
+                  onNext={handleNext}
+                  onSubmit={() => setShowSubmitConfirm(true)}
+                  isSubmitting={submitting}
+                />
               </CardContent>
             </Card>
           )}
@@ -391,7 +350,7 @@ const TakeExam = () => {
             <CardContent className="space-y-4">
               <div className="bg-muted p-4 rounded-md space-y-2">
                 <p className="text-sm"><strong>Answered:</strong> {answeredCount} of {questions.length} questions</p>
-                <p className="text-sm"><strong>Time Remaining:</strong> {formatTime(timeRemaining)}</p>
+                <p className="text-sm"><strong>Time Remaining:</strong> <ExamTimer timeRemaining={timeRemaining} /></p>
               </div>
               
               {answeredCount < questions.length && (

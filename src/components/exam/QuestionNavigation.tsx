@@ -23,33 +23,31 @@ const QuestionNavigation = ({
   isSubmitting
 }: QuestionNavigationProps) => {
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
+  const isFirstQuestion = currentQuestionIndex === 0;
+  const currentAnswer = answers.find(a => a.questionId === questions[currentQuestionIndex]?.id);
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between pt-4">
       <Button
         variant="outline"
         onClick={onPrevious}
-        disabled={currentQuestionIndex === 0}
+        disabled={isFirstQuestion}
       >
         Previous
       </Button>
 
-      <div className="flex space-x-2">
-        {questions.map((_, index) => (
-          <Button
-            key={index}
-            variant={index === currentQuestionIndex ? "default" : "outline"}
-            size="sm"
-            onClick={() => onQuestionSelect(index)}
-            className={`w-8 h-8 p-0 ${
-              answers.find(a => a.questionId === questions[index].id)
-                ? "bg-green-100 border-green-300"
-                : ""
-            }`}
-          >
-            {index + 1}
-          </Button>
-        ))}
+      <div className="flex items-center gap-4">
+        {currentAnswer ? (
+          <div className="flex items-center gap-2 text-green-600">
+            <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+            <span className="text-sm">Answered</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-gray-500">
+            <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+            <span className="text-sm">Not answered</span>
+          </div>
+        )}
       </div>
 
       {isLastQuestion ? (

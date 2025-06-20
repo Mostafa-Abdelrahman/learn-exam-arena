@@ -18,8 +18,14 @@ const ExamTimer = ({ timeRemaining }: ExamTimerProps) => {
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const getVariant = () => {
+    if (timeRemaining < 300) return "destructive"; // Last 5 minutes
+    if (timeRemaining < 900) return "secondary"; // Last 15 minutes
+    return "default";
+  };
+
   return (
-    <Badge variant={timeRemaining < 300 ? "destructive" : "default"} className="space-x-2">
+    <Badge variant={getVariant()} className="space-x-2">
       <Clock className="h-4 w-4" />
       <span>{formatTime(timeRemaining)}</span>
     </Badge>

@@ -131,6 +131,7 @@ export const useExamTaking = (examId: string) => {
       return [...prev, { questionId, answer }];
     });
 
+    // Auto-save answer
     if (examId && studentExamId) {
       ExamService.submitAnswer(examId, questionId, answer).catch(error => {
         console.error("Error saving answer:", error);
