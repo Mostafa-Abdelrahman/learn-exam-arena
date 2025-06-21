@@ -17,6 +17,7 @@ import NotFound from "@/pages/NotFound";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminMajors from "@/pages/admin/Majors";
 import AdminCourses from "@/pages/admin/Courses";
+import AdminCourseManagement from "@/pages/admin/AdminCourseManagement";
 import AdminDoctors from "@/pages/admin/Doctors";
 import AdminStudents from "@/pages/admin/Students";
 import AdminStatistics from "@/pages/admin/Statistics";
@@ -80,6 +81,11 @@ function App() {
                   <Route path="admin/courses" element={
                     <ProtectedRoute allowedRoles={['admin']}>
                       <AdminCourses />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="admin/course-management" element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminCourseManagement />
                     </ProtectedRoute>
                   } />
                   <Route path="admin/doctors" element={
