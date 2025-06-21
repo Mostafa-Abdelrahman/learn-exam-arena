@@ -1,6 +1,5 @@
-
-import React, { useState } from "react";
-import { Outlet } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Outlet, Navigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -13,10 +12,21 @@ interface DashboardLayoutProps {
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role: propRole }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
-  const { currentUser } = useAuth();
+  const { currentUser, isAuthenticated } = useAuth();
   
   // Use the role from props or from the current user
-  const role = propRole || (currentUser?.role as "admin" | "doctor" | "student") || "admin";
+  const role = propRole || (currentUser?.role as "admin" | "doctor" | "student");
+
+  // Redirect to login if user is not authenticated or role is not known
+  if (!isAuthenticated || !currentUser || !role) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Validate that the role is one of the expected values
+  const validRoles = ["admin", "doctor", "student"];
+  if (!validRoles.includes(role)) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <div className="flex h-screen bg-background">

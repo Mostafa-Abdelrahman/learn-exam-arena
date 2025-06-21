@@ -1,4 +1,3 @@
-
 import ApiService from './api.service';
 
 export interface Grade {
@@ -55,7 +54,17 @@ class GradeService {
   async getExamSubmissions(examId: string): Promise<{ data: ExamSubmission[] }> {
     try {
       const response = await ApiService.get(`/doctor/exams/${examId}/submissions`);
-      return { data: Array.isArray(response.data) ? response.data : [] };
+      
+      // Handle nested data structure: {success: true, data: {data: [...]}}
+      let submissionsArray = [];
+      const responseData = response.data as any;
+      if (responseData && responseData.data && Array.isArray(responseData.data)) {
+        submissionsArray = responseData.data;
+      } else if (Array.isArray(responseData)) {
+        submissionsArray = responseData;
+      }
+      
+      return { data: submissionsArray };
     } catch (error) {
       console.warn('API getExamSubmissions failed:', error);
       return { data: [] };

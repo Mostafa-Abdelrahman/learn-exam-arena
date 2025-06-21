@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Dialog,
@@ -37,9 +36,10 @@ interface AddExamDialogProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: ExamFormData) => void;
   courses: { id: string; name: string; code: string; }[];
+  isLoading?: boolean;
 }
 
-const AddExamDialog = ({ isOpen, onOpenChange, onSubmit, courses }: AddExamDialogProps) => {
+const AddExamDialog = ({ isOpen, onOpenChange, onSubmit, courses, isLoading = false }: AddExamDialogProps) => {
   const [formData, setFormData] = useState<ExamFormData>({
     name: "",
     course_id: "",
@@ -51,6 +51,28 @@ const AddExamDialog = ({ isOpen, onOpenChange, onSubmit, courses }: AddExamDialo
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Client-side validation
+    if (!formData.name.trim()) {
+      alert('Please enter an exam name');
+      return;
+    }
+    
+    if (!formData.course_id) {
+      alert('Please select a course');
+      return;
+    }
+    
+    if (!formData.exam_date) {
+      alert('Please select an exam date');
+      return;
+    }
+    
+    if (!formData.duration.trim() || parseInt(formData.duration) < 30) {
+      alert('Please enter a valid duration (at least 30 minutes)');
+      return;
+    }
+    
     onSubmit(formData);
   };
 
@@ -139,7 +161,8 @@ const AddExamDialog = ({ isOpen, onOpenChange, onSubmit, courses }: AddExamDialo
             <Input
               id="duration"
               type="number"
-              placeholder="120"
+              placeholder="120 (min: 30)"
+              min="30"
               value={formData.duration}
               onChange={(e) => setFormData(prev => ({ ...prev, duration: e.target.value }))}
               required
@@ -180,10 +203,13 @@ const AddExamDialog = ({ isOpen, onOpenChange, onSubmit, courses }: AddExamDialo
               type="button" 
               variant="outline" 
               onClick={() => handleOpenChange(false)}
+              disabled={isLoading}
             >
               Cancel
             </Button>
-            <Button type="submit">Add Exam</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Creating..." : "Add Exam"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

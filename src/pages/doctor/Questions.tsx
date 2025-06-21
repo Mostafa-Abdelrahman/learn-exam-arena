@@ -42,7 +42,7 @@ const DoctorQuestions = () => {
   const [choices, setChoices] = useState<Choice[]>([]);
 
   const [questionText, setQuestionText] = useState("");
-  const [questionType, setQuestionType] = useState<"mcq" | "written">("mcq");
+  const [questionType, setQuestionType] = useState<"multiple_choice" | "essay">("multiple_choice");
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [chapter, setChapter] = useState("");
   const [evaluationCriteria, setEvaluationCriteria] = useState("");
@@ -60,6 +60,7 @@ const DoctorQuestions = () => {
   const fetchQuestions = async () => {
     try {
       setLoading(true);
+      
       if (!currentUser) {
         setLoading(false);
         return;
@@ -68,9 +69,9 @@ const DoctorQuestions = () => {
       const { data: questionsData } = await DoctorService.getQuestions(currentUser.id);
       setQuestions(questionsData);
 
-      if (questionsData.length > 0) {
+      if (questionsData && questionsData.length > 0) {
         const mcqQuestionIds = questionsData
-          .filter(q => q.type === "mcq")
+          .filter(q => q.type === "multiple_choice")
           .map(q => q.id);
 
         if (mcqQuestionIds.length > 0) {
@@ -107,13 +108,13 @@ const DoctorQuestions = () => {
         return;
       }
 
-      if (questionType === "mcq") {
+      if (questionType === "multiple_choice") {
         const hasEmptyChoice = mcqChoices.some(choice => !choice.text.trim());
         if (hasEmptyChoice) {
           toast({
-            title: "Validation error",
-            description: "All choices must have text",
-            variant: "destructive",
+            title: "Incomplete choices",
+            description: "Please fill in all choice texts.",
+            variant: "destructive"
           });
           return;
         }
@@ -121,9 +122,9 @@ const DoctorQuestions = () => {
         const hasCorrectChoice = mcqChoices.some(choice => choice.is_correct);
         if (!hasCorrectChoice) {
           toast({
-            title: "Validation error",
-            description: "At least one choice must be marked as correct",
-            variant: "destructive",
+            title: "No correct answer",
+            description: "Please mark at least one choice as correct.",
+            variant: "destructive"
           });
           return;
         }
@@ -135,18 +136,19 @@ const DoctorQuestions = () => {
         type: questionType,
         chapter: chapter || null,
         difficulty: difficulty || null,
-        created_by: currentUser.id,
-        evaluation_criteria: questionType === "written" ? evaluationCriteria : null,
+        evaluation_criteria: questionType === "essay" ? evaluationCriteria : null,
       });
 
       // Create choices for MCQ questions
-      if (questionType === "mcq" && questionData) {
+      if (questionType === "multiple_choice" && questionData) {
         for (const choice of mcqChoices) {
-          if (choice.text.trim()) {
+          try {
             await DoctorService.createChoice(questionData.id, {
               text: choice.text,
-              is_correct: choice.is_correct,
+              is_correct: choice.is_correct
             });
+          } catch (error) {
+            console.error('Error creating choice:', error);
           }
         }
       }
@@ -195,7 +197,7 @@ const DoctorQuestions = () => {
     setChapter(question.chapter || "");
     setEvaluationCriteria(question.evaluation_criteria || "");
 
-    if (question.type === "mcq") {
+    if (question.type === "multiple_choice") {
       const questionChoices = choices.filter(c => c.question_id === question.id);
       
       if (questionChoices.length > 0) {
@@ -224,10 +226,10 @@ const DoctorQuestions = () => {
         text: questionText,
         chapter: chapter || null,
         difficulty: difficulty || null,
-        evaluation_criteria: questionType === "written" ? evaluationCriteria : null,
+        evaluation_criteria: questionType === "essay" ? evaluationCriteria : null,
       });
 
-      if (questionType === "mcq") {
+      if (questionType === "multiple_choice") {
         for (const choice of mcqChoices) {
           if (choice.id) {
             await DoctorService.updateChoice(choice.id, {
@@ -262,7 +264,7 @@ const DoctorQuestions = () => {
 
   const resetForm = () => {
     setQuestionText("");
-    setQuestionType("mcq");
+    setQuestionType("multiple_choice");
     setDifficulty("medium");
     setChapter("");
     setEvaluationCriteria("");
@@ -370,7 +372,7 @@ const DoctorQuestions = () => {
                     <div className="flex items-center space-x-2">
                       <span className="font-medium">Type:</span>
                       <span className="bg-primary/10 px-2 py-0.5 rounded-md capitalize">
-                        {question.type === "mcq" ? "Multiple Choice" : "Written"}
+                        {question.type === "multiple_choice" ? "Multiple Choice" : "Written"}
                       </span>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -392,7 +394,7 @@ const DoctorQuestions = () => {
                     </div>
                   )}
                   
-                  {question.type === "mcq" && questionChoices.length > 0 && (
+                  {question.type === "multiple_choice" && questionChoices.length > 0 && (
                     <div className="mt-2">
                       <div className="font-medium text-sm mb-1">Choices:</div>
                       <ul className="space-y-1 text-sm">
@@ -412,7 +414,7 @@ const DoctorQuestions = () => {
                     </div>
                   )}
                   
-                  {question.type === "written" && question.evaluation_criteria && (
+                  {question.type === "essay" && question.evaluation_criteria && (
                     <div className="mt-2">
                       <div className="font-medium text-sm">Evaluation Criteria:</div>
                       <p className="text-sm text-muted-foreground">
@@ -453,14 +455,14 @@ const DoctorQuestions = () => {
                 <Label htmlFor="question-type">Question Type</Label>
                 <Select
                   value={questionType}
-                  onValueChange={(value: "mcq" | "written") => setQuestionType(value)}
+                  onValueChange={(value: "multiple_choice" | "essay") => setQuestionType(value)}
                 >
                   <SelectTrigger id="question-type">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="mcq">Multiple Choice</SelectItem>
-                    <SelectItem value="written">Written Answer</SelectItem>
+                    <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
+                    <SelectItem value="essay">Written Answer</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -493,7 +495,7 @@ const DoctorQuestions = () => {
               />
             </div>
             
-            {questionType === "mcq" && (
+            {questionType === "multiple_choice" && (
               <div className="grid gap-2">
                 <Label>Answer Choices (mark one as correct)</Label>
                 <div className="space-y-2">
@@ -527,7 +529,7 @@ const DoctorQuestions = () => {
               </div>
             )}
             
-            {questionType === "written" && (
+            {questionType === "essay" && (
               <div className="grid gap-2">
                 <Label htmlFor="evaluation-criteria">Evaluation Criteria</Label>
                 <Textarea
@@ -603,7 +605,7 @@ const DoctorQuestions = () => {
               </div>
             </div>
             
-            {questionType === "mcq" && (
+            {questionType === "multiple_choice" && (
               <div className="grid gap-2">
                 <Label>Answer Choices (mark one as correct)</Label>
                 <div className="space-y-2">
@@ -637,7 +639,7 @@ const DoctorQuestions = () => {
               </div>
             )}
             
-            {questionType === "written" && (
+            {questionType === "essay" && (
               <div className="grid gap-2">
                 <Label htmlFor="edit-evaluation-criteria">Evaluation Criteria</Label>
                 <Textarea

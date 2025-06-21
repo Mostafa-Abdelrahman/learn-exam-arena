@@ -1,4 +1,3 @@
-
 import ApiService from './api.service';
 import { dummyQuestions, dummyChoices } from '@/data/dummy-questions';
 import { STORAGE_KEYS, getFromStorage, saveToStorage, mockQuestions } from '@/data/exam-data';
@@ -14,7 +13,7 @@ export interface DoctorStats {
 export interface Question {
   id: string;
   text: string;
-  type: 'mcq' | 'written';
+  type: 'multiple_choice' | 'true_false' | 'short_answer' | 'programming' | 'essay';
   difficulty?: 'easy' | 'medium' | 'hard';
   chapter?: string;
   evaluation_criteria?: string;
@@ -32,10 +31,9 @@ export interface Choice {
 
 export interface CreateQuestionData {
   text: string;
-  type: 'mcq' | 'written';
+  type: 'multiple_choice' | 'true_false' | 'short_answer' | 'programming' | 'essay';
   chapter?: string;
   difficulty?: 'easy' | 'medium' | 'hard';
-  created_by: string;
   evaluation_criteria?: string;
 }
 
@@ -60,30 +58,64 @@ class DoctorService {
   async getDoctorStats(doctorId: string): Promise<{ data: DoctorStats }> {
     try {
       const response = await ApiService.get(`/doctor/${doctorId}/stats`);
-      const responseData = response.data || response;
-      return { data: responseData || this.getDefaultStats() };
+      
+      // Handle nested data structure: {success: true, data: {data: {...}}}
+      let statsData = null;
+      const responseData = response.data as any;
+      if (responseData && responseData.data) {
+        statsData = responseData.data;
+      } else if (responseData && typeof responseData === 'object') {
+        statsData = responseData;
+      }
+      
+      return { data: statsData || this.getDefaultStats() };
     } catch (error) {
-      console.warn('API getDoctorStats failed, using dummy data:', error);
+      console.warn('API getDoctorStats failed, using default stats:', error);
       return { data: this.getDefaultStats() };
     }
   }
 
   async getExams(doctorId: string): Promise<{ data: Exam[] }> {
     try {
-      const response = await ApiService.get(`/doctor/${doctorId}/exams`);
-      return { data: Array.isArray(response.data) ? response.data : [] };
+      const response = await ApiService.get('/doctor/exams');
+      
+      // Handle nested data structure
+      let examsArray = [];
+      const responseData = response.data as any;
+      if (responseData && responseData.data && Array.isArray(responseData.data)) {
+        examsArray = responseData.data;
+      } else if (Array.isArray(responseData)) {
+        examsArray = responseData;
+      }
+      
+      // Filter by doctor ID if provided (the backend already filters by authenticated user)
+      if (doctorId) {
+        examsArray = examsArray.filter((exam: any) => exam.created_by === doctorId);
+      }
+      
+      return { data: examsArray };
     } catch (error) {
-      console.warn('API getExams failed, using dummy data:', error);
+      console.warn('API getExams failed, using mock data:', error);
       return { data: [] };
     }
   }
 
   async getCourses(doctorId: string): Promise<{ data: Course[] }> {
     try {
-      const response = await ApiService.get(`/doctor/${doctorId}/courses`);
-      return { data: Array.isArray(response.data) ? response.data : [] };
+      const response = await ApiService.get('/doctor/courses');
+      
+      // Handle nested data structure
+      let coursesArray = [];
+      const responseData = response.data as any;
+      if (responseData && responseData.data && Array.isArray(responseData.data)) {
+        coursesArray = responseData.data;
+      } else if (Array.isArray(responseData)) {
+        coursesArray = responseData;
+      }
+      
+      return { data: coursesArray };
     } catch (error) {
-      console.warn('API getCourses failed, using dummy data:', error);
+      console.warn('API getCourses failed, using mock data:', error);
       return { data: [] };
     }
   }
@@ -100,8 +132,18 @@ class DoctorService {
 
   async getQuestions(doctorId: string): Promise<{ data: Question[] }> {
     try {
-      const response = await ApiService.get(`/doctor/${doctorId}/questions`);
-      return { data: Array.isArray(response.data) ? response.data : [] };
+      const response = await ApiService.get('/doctor/questions');
+      
+      // Handle nested data structure: {success: true, data: {data: Array(3)}}
+      let questionsArray = [];
+      const responseData = response.data as any;
+      if (responseData && responseData.data && Array.isArray(responseData.data)) {
+        questionsArray = responseData.data;
+      } else if (Array.isArray(responseData)) {
+        questionsArray = responseData;
+      }
+      
+      return { data: questionsArray };
     } catch (error) {
       console.warn('API getQuestions failed, using mock data:', error);
       return { data: getFromStorage(STORAGE_KEYS.QUESTIONS, mockQuestions) };
@@ -124,22 +166,30 @@ class DoctorService {
     try {
       const response = await ApiService.post('/doctor/questions', questionData);
       const responseData = response.data || response;
-      return { 
-        data: responseData || this.createDefaultQuestion(questionData),
-        message: response.message || 'Question created successfully' 
-      };
+      const dataObj = responseData as Record<string, any>;
+      if (dataObj && typeof dataObj === 'object' && 'data' in dataObj && dataObj.data && 'id' in dataObj.data) {
+        return {
+          data: dataObj.data as Question,
+          message: (dataObj as any).message || 'Question created successfully',
+        };
+      } else {
+        // fallback to mock if structure is not as expected
+        const newQuestion = this.createDefaultQuestion(questionData);
+        return {
+          data: newQuestion,
+          message: 'Question created successfully',
+        };
+      }
     } catch (error) {
       console.warn('API createQuestion failed, using mock creation:', error);
       const newQuestion = this.createDefaultQuestion(questionData);
-      
       // Save to mock data
       const questions = getFromStorage(STORAGE_KEYS.QUESTIONS, mockQuestions);
       questions.push(newQuestion);
       saveToStorage(STORAGE_KEYS.QUESTIONS, questions);
-      
       return {
         data: newQuestion,
-        message: 'Question created successfully'
+        message: 'Question created successfully',
       };
     }
   }
@@ -149,7 +199,7 @@ class DoctorService {
       const response = await ApiService.put(`/doctor/questions/${questionId}`, questionData);
       const responseData = response.data || response;
       return {
-        data: responseData || this.createDefaultQuestion({ ...questionData, text: questionData.text || '', type: 'mcq', created_by: '' }),
+        data: responseData || this.createDefaultQuestion({ ...questionData, text: questionData.text || '', type: 'multiple_choice' }),
         message: response.message || 'Question updated successfully'
       };
     } catch (error) {
@@ -171,7 +221,7 @@ class DoctorService {
       }
       
       return { 
-        data: this.createDefaultQuestion({ text: '', type: 'mcq', created_by: '' }),
+        data: this.createDefaultQuestion({ text: '', type: 'multiple_choice' }),
         message: 'Question updated successfully'
       };
     }
@@ -262,11 +312,11 @@ class DoctorService {
     return {
       id: Math.random().toString(36).substr(2, 9),
       text: questionData.text || '',
-      type: questionData.type || 'mcq',
+      type: questionData.type || 'multiple_choice',
       difficulty: questionData.difficulty || 'easy',
       chapter: questionData.chapter,
       evaluation_criteria: questionData.evaluation_criteria,
-      created_by: questionData.created_by || '',
+      created_by: '',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };

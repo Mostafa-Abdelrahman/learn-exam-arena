@@ -1,4 +1,3 @@
-
 import ApiService from './api.service';
 import { dummyExamsComprehensive, dummyStudentResults } from '@/data/dummy-comprehensive';
 import { mockExams, STORAGE_KEYS, saveToStorage, getFromStorage, initializeMockData } from '@/data/exam-data';
@@ -89,9 +88,23 @@ class ExamService {
   // Get student exams
   async getStudentExams(): Promise<{ data: Exam[] }> {
     try {
+      console.log('Calling API for student exams...');
       const response = await ApiService.get('/student/exams');
-      return { data: Array.isArray(response.data) ? response.data : [] };
+      console.log('Raw API response:', response);
+      
+      // Handle nested data structure: {success: true, data: {data: [...]}}
+      let examsArray = [];
+      const responseData = response.data as any;
+      if (responseData && responseData.data && Array.isArray(responseData.data)) {
+        examsArray = responseData.data;
+      } else if (Array.isArray(responseData)) {
+        examsArray = responseData;
+      }
+      
+      console.log('Processed student exams array:', examsArray);
+      return { data: examsArray };
     } catch (error) {
+      console.error('API getStudentExams failed:', error);
       console.warn('API getStudentExams failed, using mock data:', error);
       const mockData = getFromStorage(STORAGE_KEYS.EXAMS, mockExams);
       return { data: mockData.filter((exam: Exam) => exam.status === 'published') };
@@ -114,9 +127,23 @@ class ExamService {
   // Get upcoming exams
   async getUpcomingExams(): Promise<{ data: Exam[] }> {
     try {
+      console.log('Calling API for upcoming exams...');
       const response = await ApiService.get('/student/exams/upcoming');
-      return { data: Array.isArray(response.data) ? response.data : [] };
+      console.log('Raw API response:', response);
+      
+      // Handle nested data structure: {success: true, data: {data: [...]}}
+      let examsArray = [];
+      const responseData = response.data as any;
+      if (responseData && responseData.data && Array.isArray(responseData.data)) {
+        examsArray = responseData.data;
+      } else if (Array.isArray(responseData)) {
+        examsArray = responseData;
+      }
+      
+      console.log('Processed upcoming exams array:', examsArray);
+      return { data: examsArray };
     } catch (error) {
+      console.error('API getUpcomingExams failed:', error);
       console.warn('API getUpcomingExams failed, using mock data:', error);
       const mockData = getFromStorage(STORAGE_KEYS.EXAMS, mockExams);
       const upcomingExams = mockData.filter((exam: Exam) => 
@@ -129,9 +156,23 @@ class ExamService {
   // Get student results
   async getStudentResults(): Promise<{ data: any[] }> {
     try {
+      console.log('Calling API for student results...');
       const response = await ApiService.get('/student/results');
-      return { data: Array.isArray(response.data) ? response.data : [] };
+      console.log('Raw API response:', response);
+      
+      // Handle nested data structure: {success: true, data: {data: [...]}}
+      let resultsArray = [];
+      const responseData = response.data as any;
+      if (responseData && responseData.data && Array.isArray(responseData.data)) {
+        resultsArray = responseData.data;
+      } else if (Array.isArray(responseData)) {
+        resultsArray = responseData;
+      }
+      
+      console.log('Processed results array:', resultsArray);
+      return { data: resultsArray };
     } catch (error) {
+      console.error('API getStudentResults failed:', error);
       console.warn('API getStudentResults failed, using mock data:', error);
       return { data: getFromStorage(STORAGE_KEYS.EXAM_RESULTS, []) };
     }
@@ -141,7 +182,17 @@ class ExamService {
   async getDoctorExams(): Promise<{ data: Exam[] }> {
     try {
       const response = await ApiService.get('/doctor/exams');
-      return { data: Array.isArray(response.data) ? response.data : [] };
+      
+      // Handle nested data structure: {success: true, data: {data: [...]}}
+      let examsArray = [];
+      const responseData = response.data as any;
+      if (responseData && responseData.data && Array.isArray(responseData.data)) {
+        examsArray = responseData.data;
+      } else if (Array.isArray(responseData)) {
+        examsArray = responseData;
+      }
+      
+      return { data: examsArray };
     } catch (error) {
       console.warn('API getDoctorExams failed, using mock data:', error);
       const mockData = getFromStorage(STORAGE_KEYS.EXAMS, mockExams);
@@ -276,10 +327,23 @@ class ExamService {
   // Create exam (doctor)
   async createExam(examData: CreateExamData): Promise<{ exam: Exam }> {
     try {
+      console.log('Creating exam with data:', examData);
       const response = await ApiService.post('/doctor/exams', examData);
-      const responseData = response.data || response;
-      return { exam: responseData || this.createDefaultExam(examData) };
+      console.log('API response:', response);
+      
+      // Handle nested data structure: {success: true, data: {exam: {...}}}
+      let examResponseData = null;
+      const responseData = response.data as any;
+      if (responseData && responseData.exam) {
+        examResponseData = responseData.exam;
+      } else if (responseData && typeof responseData === 'object' && 'id' in responseData) {
+        examResponseData = responseData;
+      }
+      
+      console.log('Processed exam data:', examResponseData);
+      return { exam: examResponseData || this.createDefaultExam(examData) };
     } catch (error) {
+      console.error('API createExam failed:', error);
       console.warn('API createExam failed, using mock creation:', error);
       const newExam = this.createDefaultExam(examData);
       
@@ -296,8 +360,17 @@ class ExamService {
   async updateExam(examId: string, examData: UpdateExamData): Promise<{ exam: Exam }> {
     try {
       const response = await ApiService.put(`/doctor/exams/${examId}`, examData);
-      const responseData = response.data || response;
-      return { exam: responseData || this.getDefaultExam(examId) };
+      
+      // Handle nested data structure: {success: true, data: {exam: {...}}}
+      let examData = null;
+      const responseData = response.data as any;
+      if (responseData && responseData.exam) {
+        examData = responseData.exam;
+      } else if (responseData && typeof responseData === 'object' && 'id' in responseData) {
+        examData = responseData;
+      }
+      
+      return { exam: examData || this.getDefaultExam(examId) };
     } catch (error) {
       console.warn('API updateExam failed, using mock update:', error);
       const mockData = getFromStorage(STORAGE_KEYS.EXAMS, mockExams);
@@ -321,7 +394,17 @@ class ExamService {
   async deleteExam(examId: string): Promise<{ message: string }> {
     try {
       const response = await ApiService.delete(`/doctor/exams/${examId}`);
-      return { message: response.message || 'Exam deleted successfully' };
+      
+      // Handle nested data structure: {success: true, data: {message: "..."}}
+      let message = 'Exam deleted successfully';
+      const responseData = response.data as any;
+      if (responseData && responseData.message) {
+        message = responseData.message;
+      } else if (response.message) {
+        message = response.message;
+      }
+      
+      return { message };
     } catch (error) {
       console.warn('API deleteExam failed, using mock deletion:', error);
       const mockData = getFromStorage(STORAGE_KEYS.EXAMS, mockExams);

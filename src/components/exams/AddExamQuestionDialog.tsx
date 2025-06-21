@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -142,8 +141,8 @@ const AddExamQuestionDialog = ({ isOpen, onOpenChange, examId, onQuestionsAdded 
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="mcq">Multiple Choice</SelectItem>
-                <SelectItem value="written">Written Answer</SelectItem>
+                <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
+                <SelectItem value="essay">Written Answer</SelectItem>
               </SelectContent>
             </Select>
 
@@ -180,7 +179,7 @@ const AddExamQuestionDialog = ({ isOpen, onOpenChange, examId, onQuestionsAdded 
                       </div>
                       <div className="flex space-x-2">
                         <Badge variant="outline">
-                          {question.type === 'mcq' ? 'Multiple Choice' : 'Written Answer'}
+                          {question.type === 'multiple_choice' ? 'Multiple Choice' : 'Written Answer'}
                         </Badge>
                         <Badge 
                           variant={
@@ -194,7 +193,7 @@ const AddExamQuestionDialog = ({ isOpen, onOpenChange, examId, onQuestionsAdded 
                       </div>
                     </div>
                   </CardHeader>
-                  {question.type === 'mcq' && question.choices && (
+                  {question.type === 'multiple_choice' && question.choices && (
                     <CardContent className="pt-0">
                       <div className="text-sm text-muted-foreground">
                         <strong>Choices:</strong>

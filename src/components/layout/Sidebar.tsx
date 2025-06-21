@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation } from "react-router-dom";
 import { 
@@ -15,11 +14,15 @@ import {
   PenTool,
   ClipboardList,
   Award,
-  BarChart
+  BarChart,
+  Trophy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import ExamService from "@/services/exam.service";
+import { Badge } from "@/components/ui/badge";
 
 interface SidebarProps {
   role: "admin" | "doctor" | "student";
@@ -29,6 +32,37 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ role, closeSidebar }) => {
   const { currentUser } = useAuth();
   const location = useLocation();
+
+  // Fetch exam results for students
+  const { data: examResults } = useQuery({
+    queryKey: ["student-results-sidebar"],
+    queryFn: async () => {
+      if (role !== "student") return [];
+      try {
+        const response = await ExamService.getStudentResults();
+        return response.data || [];
+      } catch (error) {
+        console.error('Error fetching exam results for sidebar:', error);
+        return [];
+      }
+    },
+    enabled: role === "student",
+  });
+
+  // Calculate quick stats for students
+  const getQuickStats = () => {
+    if (!examResults || examResults.length === 0) return null;
+    
+    const totalExams = examResults.length;
+    const averageScore = Math.round(
+      examResults.reduce((sum: number, result: any) => sum + parseFloat(result.score), 0) / totalExams
+    );
+    const passedExams = examResults.filter((result: any) => parseFloat(result.score) >= 60).length;
+    
+    return { totalExams, averageScore, passedExams };
+  };
+
+  const quickStats = getQuickStats();
 
   // Different navigation items based on user role
   const getNavItems = () => {
@@ -61,7 +95,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, closeSidebar }) => {
           { name: "Exams", path: "/student/exams", icon: ClipboardList },
           { name: "Schedule", path: "/student/schedule", icon: CalendarCheck },
           { name: "Grades", path: "/student/grades", icon: Award },
-          { name: "Profile", path: "/student/profile", icon: User },
+          { name: "Results", path: "/student/results", icon: Trophy },
           { name: "Settings", path: "/student/settings", icon: Settings },
         ];
       default:
@@ -108,6 +142,38 @@ const Sidebar: React.FC<SidebarProps> = ({ role, closeSidebar }) => {
             </Link>
           ))}
         </nav>
+
+        {/* Quick Exam Results Summary for Students */}
+        {role === "student" && quickStats && (
+          <div className="px-3 mt-4">
+            <div className="rounded-lg border border-sidebar-border bg-sidebar-accent/50 p-3">
+              <div className="flex items-center gap-2 mb-3">
+                <Trophy className="h-4 w-4 text-sidebar-primary" />
+                <span className="text-xs font-medium text-sidebar-foreground">Quick Stats</span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-sidebar-foreground/70">Exams Taken:</span>
+                  <span className="font-medium">{quickStats.totalExams}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-sidebar-foreground/70">Avg Score:</span>
+                  <span className="font-medium text-green-500">{quickStats.averageScore}%</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-sidebar-foreground/70">Passed:</span>
+                  <span className="font-medium text-blue-500">{quickStats.passedExams}/{quickStats.totalExams}</span>
+                </div>
+              </div>
+              <Link
+                to="/student/results"
+                className="mt-3 block text-center text-xs text-sidebar-primary hover:underline"
+              >
+                View All Results →
+              </Link>
+            </div>
+          </div>
+        )}
       </ScrollArea>
       
       <div className="mt-auto border-t border-sidebar-border p-4">

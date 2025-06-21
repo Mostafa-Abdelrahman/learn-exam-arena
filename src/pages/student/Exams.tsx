@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,13 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search, Calendar, Clock, BookOpen, FileText, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getFromStorage, STORAGE_KEYS } from "@/data/exam-data";
+import ExamService from "@/services/exam.service";
+import StudentService from "@/services/student.service";
 
 const StudentExams = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [exams, setExams] = useState<Exam[]>([]);
+  const [completedExams, setCompletedExams] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState<"all" | "upcoming" | "completed">("all");
 
@@ -24,15 +25,23 @@ const StudentExams = () => {
   const fetchExams = async () => {
     try {
       setLoading(true);
-      // Get mock exam data from local storage
-      const mockExams = getFromStorage(STORAGE_KEYS.EXAMS, []);
-      // Only show published exams to students
-      const publishedExams = mockExams.filter((exam: Exam) => exam.status === 'published');
-      setExams(publishedExams);
+      console.log('Fetching exams data...');
+      
+      // Fetch all available exams
+      const examsResponse = await ExamService.getStudentExams();
+      console.log('Exams response:', examsResponse);
+      setExams(examsResponse.data || []);
+      
+      // Fetch completed exam results
+      const resultsResponse = await ExamService.getStudentResults();
+      console.log('Results response:', resultsResponse);
+      setCompletedExams(resultsResponse.data || []);
+      
     } catch (error: any) {
+      console.error('Error fetching exams:', error);
       toast({
         title: "Error fetching exams",
-        description: error.message,
+        description: error.message || "Failed to load exams",
         variant: "destructive",
       });
     } finally {
@@ -49,8 +58,11 @@ const StudentExams = () => {
   };
 
   const isCompleted = (examId: string) => {
-    const results = getFromStorage(STORAGE_KEYS.EXAM_RESULTS, []);
-    return results.some((result: any) => result.exam_id === examId);
+    return completedExams.some((result: any) => result.exam_id === examId);
+  };
+
+  const getExamResult = (examId: string) => {
+    return completedExams.find((result: any) => result.exam_id === examId);
   };
 
   const filteredExams = exams.filter(exam => {
@@ -122,6 +134,7 @@ const StudentExams = () => {
           {filteredExams.map((exam) => {
             const upcoming = isUpcoming(exam.exam_date);
             const completed = isCompleted(exam.id);
+            const result = getExamResult(exam.id);
             
             return (
               <Card key={exam.id} className="hover:shadow-md transition-shadow">
@@ -159,6 +172,15 @@ const StudentExams = () => {
                       <span>{exam.total_marks || 100} marks</span>
                     </div>
                   </div>
+
+                  {completed && result && (
+                    <div className="bg-green-50 p-3 rounded-md">
+                      <p className="text-sm font-medium text-green-800">
+                        Score: {result.score}/{result.total_marks || exam.total_marks} 
+                        ({Math.round((result.score / (result.total_marks || exam.total_marks)) * 100)}%)
+                      </p>
+                    </div>
+                  )}
 
                   {exam.instructions && (
                     <div className="text-sm text-muted-foreground">

@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -281,7 +280,7 @@ const TakeExam = () => {
                     Question {currentQuestionIndex + 1} of {questions.length}
                   </CardTitle>
                   <Badge variant="outline">
-                    {currentQuestion.type === 'mcq' ? 'Multiple Choice' : 'Written Answer'}
+                    {currentQuestion.type === 'multiple_choice' ? 'Multiple Choice' : 'Written Answer'}
                   </Badge>
                 </div>
               </CardHeader>
@@ -292,7 +291,7 @@ const TakeExam = () => {
 
                 <Separator />
 
-                {currentQuestion.type === 'mcq' && currentQuestion.choices ? (
+                {currentQuestion.type === 'multiple_choice' && currentQuestion.choices ? (
                   <RadioGroup 
                     value={currentAnswer?.answer || ""} 
                     onValueChange={(value) => handleAnswerChange(currentQuestion.id, value)}

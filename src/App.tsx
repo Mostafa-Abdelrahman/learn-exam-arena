@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -8,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Auth Pages
 import Login from "@/pages/Login";
@@ -21,6 +21,8 @@ import AdminCourseManagement from "@/pages/admin/AdminCourseManagement";
 import AdminDoctors from "@/pages/admin/Doctors";
 import AdminStudents from "@/pages/admin/Students";
 import AdminStatistics from "@/pages/admin/Statistics";
+import AdminSettings from "@/pages/admin/Settings";
+
 
 // Doctor Pages
 import DoctorDashboard from "@/pages/doctor/Dashboard";
@@ -37,6 +39,10 @@ import StudentResults from "@/pages/student/Results";
 import StudentCourses from "@/pages/student/Courses";
 import StudentProfile from "@/pages/student/Profile";
 import TakeExam from "@/pages/student/TakeExam";
+import DoctorReports from "./pages/doctor/Reports";
+import DoctorSettings from "./pages/doctor/Settings";
+import StudentSettings from "./pages/student/Settings";
+import StudentSchedule from "./pages/student/Schedule";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,13 +55,30 @@ const queryClient = new QueryClient({
 
 // Role-based redirect component
 const RoleBasedRedirect = () => {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const { currentUser, isAuthenticated, loading } = useAuth();
   
-  if (user?.role === 'admin') {
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated || !currentUser) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  const role = currentUser.role;
+  
+  if (role === 'admin') {
     return <Navigate to="/admin/dashboard" replace />;
-  } else if (user?.role === 'doctor') {
+  } else if (role === 'doctor') {
     return <Navigate to="/doctor/dashboard" replace />;
-  } else if (user?.role === 'student') {
+  } else if (role === 'student') {
     return <Navigate to="/student/dashboard" replace />;
   }
   
@@ -75,114 +98,54 @@ function App() {
                 
                 {/* Root redirect */}
                 <Route path="/" element={<RoleBasedRedirect />} />
-                <Route path="/dashboard" element={<RoleBasedRedirect />} />
                 
                 {/* Protected Routes with Layout */}
-                <Route path="/" element={
-                  <ProtectedRoute>
-                    <DashboardLayout />
+                <Route path="/admin/*" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <DashboardLayout role="admin" />
                   </ProtectedRoute>
                 }>
-                  {/* Admin Routes */}
-                  <Route path="admin/dashboard" element={
-                    <ProtectedRoute allowedRoles={['admin']}>
-                      <AdminDashboard />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="admin/majors" element={
-                    <ProtectedRoute allowedRoles={['admin']}>
-                      <AdminMajors />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="admin/courses" element={
-                    <ProtectedRoute allowedRoles={['admin']}>
-                      <AdminCourses />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="admin/course-management" element={
-                    <ProtectedRoute allowedRoles={['admin']}>
-                      <AdminCourseManagement />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="admin/doctors" element={
-                    <ProtectedRoute allowedRoles={['admin']}>
-                      <AdminDoctors />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="admin/students" element={
-                    <ProtectedRoute allowedRoles={['admin']}>
-                      <AdminStudents />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="admin/statistics" element={
-                    <ProtectedRoute allowedRoles={['admin']}>
-                      <AdminStatistics />
-                    </ProtectedRoute>
-                  } />
-                  
-                  {/* Doctor Routes */}
-                  <Route path="doctor/dashboard" element={
-                    <ProtectedRoute allowedRoles={['doctor']}>
-                      <DoctorDashboard />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="doctor/exams" element={
-                    <ProtectedRoute allowedRoles={['doctor']}>
-                      <DoctorExams />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="doctor/questions" element={
-                    <ProtectedRoute allowedRoles={['doctor']}>
-                      <DoctorQuestions />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="doctor/courses" element={
-                    <ProtectedRoute allowedRoles={['doctor']}>
-                      <DoctorCourses />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="doctor/students" element={
-                    <ProtectedRoute allowedRoles={['doctor']}>
-                      <DoctorStudents />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="doctor/grading" element={
-                    <ProtectedRoute allowedRoles={['doctor']}>
-                      <DoctorGrading />
-                    </ProtectedRoute>
-                  } />
-                  
-                  {/* Student Routes */}
-                  <Route path="student/dashboard" element={
-                    <ProtectedRoute allowedRoles={['student']}>
-                      <StudentDashboard />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="student/exams" element={
-                    <ProtectedRoute allowedRoles={['student']}>
-                      <StudentExams />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="student/exams/:examId/take" element={
-                    <ProtectedRoute allowedRoles={['student']}>
-                      <TakeExam />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="student/results" element={
-                    <ProtectedRoute allowedRoles={['student']}>
-                      <StudentResults />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="student/courses" element={
-                    <ProtectedRoute allowedRoles={['student']}>
-                      <StudentCourses />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="student/profile" element={
-                    <ProtectedRoute allowedRoles={['student']}>
-                      <StudentProfile />
-                    </ProtectedRoute>
-                  } />
+                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route path="dashboard" element={<AdminDashboard />} />
+                  <Route path="majors" element={<AdminMajors />} />
+                  <Route path="courses" element={<AdminCourses />} />
+                  <Route path="course-management" element={<AdminCourseManagement />} />
+                  <Route path="doctors" element={<AdminDoctors />} />
+                  <Route path="students" element={<AdminStudents />} />
+                  <Route path="statistics" element={<AdminStatistics />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                </Route>
+                
+                <Route path="/doctor/*" element={
+                  <ProtectedRoute allowedRoles={['doctor']}>
+                    <DashboardLayout role="doctor" />
+                  </ProtectedRoute>
+                }>
+                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route path="dashboard" element={<DoctorDashboard />} />
+                  <Route path="exams" element={<DoctorExams />} />
+                  <Route path="questions" element={<DoctorQuestions />} />
+                  <Route path="courses" element={<DoctorCourses />} />
+                  <Route path="students" element={<DoctorStudents />} />
+                  <Route path="grading" element={<DoctorGrading />} />
+                  <Route path="settings" element={<DoctorSettings />} />
+                  <Route path="reports" element={<DoctorReports />} />
+                </Route>
+                
+                <Route path="/student/*" element={
+                  <ProtectedRoute allowedRoles={['student']}>
+                    <DashboardLayout role="student" />
+                  </ProtectedRoute>
+                }>
+                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route path="dashboard" element={<StudentDashboard />} />
+                  <Route path="exams" element={<StudentExams />} />
+                  <Route path="exams/:examId/take" element={<TakeExam />} />
+                  <Route path="results" element={<StudentResults />} />
+                  <Route path="courses" element={<StudentCourses />} />
+                  <Route path="profile" element={<StudentProfile />} />
+                  <Route path="settings" element={<StudentSettings />} />
+                  <Route path="schedule" element={<StudentSchedule />} />
                 </Route>
                 
                 {/* 404 Route */}

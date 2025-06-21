@@ -171,10 +171,11 @@ const EditExamDialog = ({
                 <Input
                   id="edit-duration"
                   type="number"
-                  placeholder="120"
+                  placeholder="120 (min: 30)"
                   value={formData.duration}
                   onChange={(e) => setFormData(prev => ({ ...prev, duration: e.target.value }))}
                   required
+                  min="30"
                 />
               </div>
               

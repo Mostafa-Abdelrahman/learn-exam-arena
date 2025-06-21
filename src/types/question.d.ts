@@ -1,17 +1,13 @@
-
-declare interface Question {
+export interface Question {
   id: string;
   text: string;
-  question_text?: string; // For backward compatibility
-  type: "mcq" | "written" | "multiple-choice";
-  question_type?: string; // For backward compatibility
-  chapter?: string;
+  type: "multiple_choice" | "true_false" | "short_answer" | "programming" | "essay";
   difficulty?: "easy" | "medium" | "hard";
-  difficulty_level?: string; // For backward compatibility
+  chapter?: string;
+  evaluation_criteria?: string;
   created_by: string;
   created_at?: string;
   updated_at?: string;
-  evaluation_criteria?: string;
   choices?: Choice[];
 }
 

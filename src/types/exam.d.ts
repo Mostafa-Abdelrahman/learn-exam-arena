@@ -1,4 +1,3 @@
-
 declare interface Exam {
   id: string;
   name: string;
@@ -34,7 +33,7 @@ declare interface ExamQuestion {
   question_id: string;
   text?: string;
   question_text?: string;
-  type?: "mcq" | "written" | "multiple-choice";
+  type?: "multiple_choice" | "true_false" | "short_answer" | "programming" | "essay";
   question_type?: string;
   weight?: number;
   difficulty_level?: string;

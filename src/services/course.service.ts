@@ -1,4 +1,3 @@
-
 import ApiService from './api.service';
 import { dummyCourses } from '@/data/dummy-comprehensive';
 import AuthService from './auth.service';
@@ -138,7 +137,17 @@ class CourseService {
   async getDoctorCourses(): Promise<{ data: Course[] }> {
     try {
       const response = await ApiService.get('/doctor/courses');
-      return { data: Array.isArray(response.data) ? response.data : [] };
+      
+      // Handle nested data structure: {success: true, data: {data: [...]}}
+      let coursesArray = [];
+      const responseData = response.data as any;
+      if (responseData && responseData.data && Array.isArray(responseData.data)) {
+        coursesArray = responseData.data;
+      } else if (Array.isArray(responseData)) {
+        coursesArray = responseData;
+      }
+      
+      return { data: coursesArray };
     } catch (error) {
       console.warn('API getDoctorCourses failed, using dummy data:', error);
       return { data: dummyCourses };

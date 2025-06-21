@@ -1,4 +1,3 @@
-
 // Mock data for exam system
 export const mockExams: Exam[] = [
   {
@@ -22,7 +21,7 @@ export const mockExams: Exam[] = [
         question_id: "q1",
         exam_id: "exam-1",
         text: "What is the output of the following Python code?\n\nprint('Hello' + ' ' + 'World')",
-        type: "mcq",
+        type: "multiple_choice",
         weight: 10,
         choices: [
           { id: "c1", text: "Hello World", is_correct: true },
@@ -36,7 +35,7 @@ export const mockExams: Exam[] = [
         question_id: "q2",
         exam_id: "exam-1",
         text: "Explain the difference between a list and a tuple in Python.",
-        type: "written",
+        type: "essay",
         weight: 15
       },
       {
@@ -44,7 +43,7 @@ export const mockExams: Exam[] = [
         question_id: "q3", 
         exam_id: "exam-1",
         text: "Which of the following are valid Python data types? (Select all that apply)",
-        type: "mcq",
+        type: "multiple_choice",
         weight: 10,
         choices: [
           { id: "c5", text: "int", is_correct: true },
@@ -77,7 +76,7 @@ export const mockExams: Exam[] = [
         question_id: "q4",
         exam_id: "exam-2", 
         text: "What is the time complexity of searching in a balanced binary search tree?",
-        type: "mcq",
+        type: "multiple_choice",
         weight: 10,
         choices: [
           { id: "c10", text: "O(1)", is_correct: false },
@@ -91,7 +90,7 @@ export const mockExams: Exam[] = [
         question_id: "q5",
         exam_id: "exam-2",
         text: "Implement a function to reverse a linked list. Explain your approach.",
-        type: "written", 
+        type: "essay", 
         weight: 20
       }
     ]
@@ -102,7 +101,7 @@ export const mockQuestions: Question[] = [
   {
     id: "q1",
     text: "What is the output of the following Python code?\n\nprint('Hello' + ' ' + 'World')",
-    type: "mcq",
+    type: "multiple_choice",
     difficulty: "easy",
     created_by: "doctor-1",
     created_at: new Date().toISOString(),
@@ -116,7 +115,7 @@ export const mockQuestions: Question[] = [
   {
     id: "q2",
     text: "Explain the difference between a list and a tuple in Python.",
-    type: "written",
+    type: "essay",
     difficulty: "medium", 
     created_by: "doctor-1",
     created_at: new Date().toISOString(),
@@ -125,7 +124,7 @@ export const mockQuestions: Question[] = [
   {
     id: "q3",
     text: "Which of the following are valid Python data types?",
-    type: "mcq",
+    type: "multiple_choice",
     difficulty: "easy",
     created_by: "doctor-1", 
     created_at: new Date().toISOString(),
@@ -140,7 +139,7 @@ export const mockQuestions: Question[] = [
   {
     id: "q4",
     text: "What is the time complexity of searching in a balanced binary search tree?",
-    type: "mcq",
+    type: "multiple_choice",
     difficulty: "medium",
     created_by: "doctor-1",
     created_at: new Date().toISOString(),
@@ -154,7 +153,7 @@ export const mockQuestions: Question[] = [
   {
     id: "q5",
     text: "Implement a function to reverse a linked list. Explain your approach.",
-    type: "written",
+    type: "essay",
     difficulty: "hard",
     created_by: "doctor-1",
     created_at: new Date().toISOString(),

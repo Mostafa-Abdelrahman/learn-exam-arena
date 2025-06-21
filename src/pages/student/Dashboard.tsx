@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -65,9 +65,12 @@ const StudentDashboard = () => {
     queryKey: ["student-results"],
     queryFn: async () => {
       try {
+        console.log('Fetching student results...');
         const response = await ExamService.getStudentResults();
+        console.log('Student results response:', response);
         return response.data;
       } catch (error) {
+        console.error('Error fetching student results:', error);
         return [];
       }
     },
@@ -75,12 +78,63 @@ const StudentDashboard = () => {
 
   const enrolledCourses = courses || [];
   const recentResults = (results || []).slice(0, 3);
-  const avgGPA = results?.length > 0 ? 
-    (results.reduce((acc: number, result: any) => acc + result.percentage, 0) / results.length / 100 * 4).toFixed(2) : "0.00";
+  
+  // Calculate GPA from results
+  const calculateGPA = useCallback(() => {
+    if (!results || results.length === 0) return "0.00";
+    
+    const totalPoints = results.reduce((sum, result) => {
+      // Use percentage if available, otherwise use score
+      let percentage = 0;
+      if (result.percentage !== undefined && result.percentage !== null) {
+        percentage = parseFloat(result.percentage);
+      } else if (result.score !== undefined && result.score !== null) {
+        percentage = parseFloat(result.score);
+      }
+      // Ensure percentage is a valid number
+      if (isNaN(percentage)) {
+        return sum;
+      }
+      // Convert percentage to 4.0 scale
+      let gpaPoints = 0;
+      if (percentage >= 90) gpaPoints = 4.0;
+      else if (percentage >= 85) gpaPoints = 3.7;
+      else if (percentage >= 80) gpaPoints = 3.3;
+      else if (percentage >= 75) gpaPoints = 3.0;
+      else if (percentage >= 70) gpaPoints = 2.7;
+      else if (percentage >= 65) gpaPoints = 2.3;
+      else if (percentage >= 60) gpaPoints = 2.0;
+      else if (percentage >= 55) gpaPoints = 1.7;
+      else if (percentage >= 50) gpaPoints = 1.3;
+      else if (percentage >= 45) gpaPoints = 1.0;
+      else gpaPoints = 0.0;
+      return sum + gpaPoints;
+    }, 0);
+    return (totalPoints / results.length).toFixed(2);
+  }, [results]);
+  
+  const avgGPA = calculateGPA();
 
   const handleStartExam = (examId: string) => {
     navigate(`/student/exams/${examId}/take`);
   };
+
+  // Test GPA calculation with sample data
+  const testGPACalculation = () => {
+    const testResults = [
+      { exam_name: 'Test 1', score: 85, percentage: 85 },
+      { exam_name: 'Test 2', score: 92, percentage: 92 },
+      { exam_name: 'Test 3', score: 78, percentage: 78 }
+    ];
+    console.log('Testing GPA calculation with sample data:');
+    const testGPA = calculateGPA();
+    console.log(`Test GPA result: ${testGPA}`);
+  };
+
+  // Run test on component mount
+  useEffect(() => {
+    testGPACalculation();
+  }, []);
 
   return (
     <div className="space-y-6 animate-in">
@@ -230,7 +284,7 @@ const StudentDashboard = () => {
             {isLoadingCourses ? (
               <div className="space-y-3">
                 {Array(3).fill(0).map((_, i) => (
-                  <div key={`skeleton-${i}`} className="flex justify-between items-center">
+                  <div key={`course-skeleton-${i}`} className="flex justify-between items-center">
                     <div className="space-y-1">
                       <Skeleton className="h-4 w-32" />
                       <Skeleton className="h-3 w-24" />
@@ -296,7 +350,7 @@ const StudentDashboard = () => {
             {isLoadingResults ? (
               <div className="space-y-3">
                 {Array(3).fill(0).map((_, i) => (
-                  <div key={`skeleton-${i}`} className="flex justify-between items-center">
+                  <div key={`result-skeleton-${i}`} className="flex justify-between items-center">
                     <div className="space-y-1">
                       <Skeleton className="h-4 w-32" />
                       <Skeleton className="h-3 w-24" />
@@ -307,27 +361,49 @@ const StudentDashboard = () => {
               </div>
             ) : recentResults.length > 0 ? (
               <div className="space-y-3">
-                {recentResults.map((result) => (
-                  <div key={`result-${result.id}`} className="flex justify-between items-center">
-                    <div className="flex-1">
-                      <p className="font-medium">{result.exam_name}</p>
-                      <p className="text-sm text-muted-foreground">{result.course_name}</p>
+                {recentResults.map((result, index) => {
+                  // Ensure percentage is a number and handle edge cases
+                  let percentage = 0;
+                  if (result.percentage !== undefined && result.percentage !== null) {
+                    percentage = parseFloat(result.percentage);
+                  } else if (result.score !== undefined && result.score !== null) {
+                    percentage = parseFloat(result.score);
+                  }
+                  
+                  // Ensure percentage is a valid number
+                  if (isNaN(percentage)) {
+                    percentage = 0;
+                  }
+                  
+                  const isPassing = percentage >= 60;
+                  
+                  return (
+                    <div key={`result-${result.exam_id || result.id || index}`} className="flex justify-between items-center">
+                      <div className="flex-1">
+                        <p className="font-medium">{result.exam_name}</p>
+                        <p className="text-sm text-muted-foreground">{result.course_name}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge 
+                          variant={isPassing ? "default" : "destructive"}
+                          className="min-w-[50px] justify-center"
+                        >
+                          {percentage.toFixed(1)}%
+                        </Badge>
+                        {result.grade_letter && (
+                          <Badge variant="outline" className="text-xs">
+                            {result.grade_letter}
+                          </Badge>
+                        )}
+                        {isPassing ? (
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4 text-red-600" />
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge 
-                        variant={result.percentage >= 60 ? "default" : "destructive"}
-                        className="min-w-[50px] justify-center"
-                      >
-                        {result.percentage}%
-                      </Badge>
-                      {result.percentage >= 60 ? (
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <AlertCircle className="h-4 w-4 text-red-600" />
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <Button 
                   variant="ghost" 
                   className="w-full mt-2"
