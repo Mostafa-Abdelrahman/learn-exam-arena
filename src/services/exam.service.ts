@@ -350,6 +350,7 @@ class ExamService {
       exam_date: new Date().toISOString(),
       duration: '60',
       status: 'draft',
+      total_marks: 100,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -360,6 +361,7 @@ class ExamService {
       id: `exam-${Date.now()}`,
       ...examData,
       status: 'draft' as const,
+      total_marks: examData.total_marks || 100,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };

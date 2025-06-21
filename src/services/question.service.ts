@@ -1,3 +1,4 @@
+
 import ApiService from './api.service';
 
 export interface QuestionFilters {
@@ -294,7 +295,7 @@ class QuestionService {
       id: `question-${Date.now()}`,
       text: questionData?.text || 'Default Question',
       type: questionData?.type || 'mcq',
-      created_by: questionData?.created_by || 'default',
+      created_by: 'default',
       difficulty: questionData?.difficulty || 'easy',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()

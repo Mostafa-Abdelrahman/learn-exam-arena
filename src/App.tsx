@@ -27,7 +27,7 @@ import DoctorExams from "@/pages/doctor/Exams";
 import DoctorQuestions from "@/pages/doctor/Questions";
 import DoctorCourses from "@/pages/doctor/Courses";
 import DoctorStudents from "@/pages/doctor/Students";
-import DoctorGrades from "@/pages/doctor/Grades";
+import DoctorGrading from "@/pages/doctor/Grading";
 
 // Student Pages
 import StudentDashboard from "@/pages/student/Dashboard";
@@ -60,7 +60,7 @@ function App() {
                 {/* Protected Routes */}
                 <Route path="/" element={
                   <ProtectedRoute>
-                    <DashboardLayout />
+                    <DashboardLayout role="admin" />
                   </ProtectedRoute>
                 }>
                   {/* Default redirect based on role */}
@@ -101,7 +101,7 @@ function App() {
                   {/* Doctor Routes */}
                   <Route path="doctor/dashboard" element={
                     <ProtectedRoute allowedRoles={['doctor']}>
-                      <DoctorDashboard />
+                      <AdminDashboard />
                     </ProtectedRoute>
                   } />
                   <Route path="doctor/exams" element={
@@ -124,9 +124,9 @@ function App() {
                       <DoctorStudents />
                     </ProtectedRoute>
                   } />
-                  <Route path="doctor/grades" element={
+                  <Route path="doctor/grading" element={
                     <ProtectedRoute allowedRoles={['doctor']}>
-                      <DoctorGrades />
+                      <DoctorGrading />
                     </ProtectedRoute>
                   } />
                   

@@ -13,6 +13,7 @@ declare interface Exam {
   created_at?: string;
   updated_at?: string;
   needs_grading?: boolean;
+  total_marks?: number;
   course?: {
     id?: string;
     name: string;

@@ -4,14 +4,19 @@ import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardLayoutProps {
-  role: "admin" | "doctor" | "student";
+  role?: "admin" | "doctor" | "student";
 }
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role }) => {
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({ role: propRole }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
+  const { currentUser } = useAuth();
+  
+  // Use the role from props or from the current user
+  const role = propRole || (currentUser?.role as "admin" | "doctor" | "student") || "admin";
 
   return (
     <div className="flex h-screen bg-background">
