@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -38,22 +39,22 @@ const LoginForm = ({ onForgotPassword, onSwitchToSignup }: LoginFormProps) => {
     setLoading(true);
     
     try {
-      const response = await AuthService.login(email, password);
+      const response = await AuthService.login({ email, password });
       
       // Store token and user data
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('user', JSON.stringify(response.user));
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
       
       // Update auth context with credentials
       await login({ email, password });
       
       toast({
         title: "Login successful!",
-        description: `Welcome back, ${response.user.name}`,
+        description: `Welcome back, ${response.data.user.name}`,
       });
 
       // Navigate based on user role
-      switch (response.user.role) {
+      switch (response.data.user.role) {
         case 'admin':
           navigate('/admin');
           break;

@@ -1,6 +1,6 @@
 import ApiService from './api.service';
 import { dummyQuestions, dummyChoices } from '@/data/dummy-questions';
-import { User } from './auth.service';
+import { SafeUserResponse as User } from '@/types/api-response';
 
 export interface DoctorStats {
   total_courses: number;
@@ -57,7 +57,8 @@ export interface UpdateChoiceData {
 class DoctorService {
   async getDoctorStats(doctorId: string): Promise<{ data: DoctorStats }> {
     try {
-      return await ApiService.get(`/doctor/${doctorId}/stats`);
+      const response = await ApiService.get(`/doctor/${doctorId}/stats`);
+      return { data: response.data };
     } catch (error) {
       console.warn('API getDoctorStats failed, using dummy data:', error);
       return {
@@ -73,7 +74,8 @@ class DoctorService {
 
   async getExams(doctorId: string): Promise<{ data: Exam[] }> {
     try {
-      return await ApiService.get(`/doctor/${doctorId}/exams`);
+      const response = await ApiService.get(`/doctor/${doctorId}/exams`);
+      return { data: response.data };
     } catch (error) {
       console.warn('API getExams failed, using dummy data:', error);
       return { data: [] };
@@ -82,7 +84,8 @@ class DoctorService {
 
   async getCourses(doctorId: string): Promise<{ data: Course[] }> {
     try {
-      return await ApiService.get(`/doctor/${doctorId}/courses`);
+      const response = await ApiService.get(`/doctor/${doctorId}/courses`);
+      return { data: response.data };
     } catch (error) {
       console.warn('API getCourses failed, using dummy data:', error);
       return { data: [] };
@@ -91,7 +94,8 @@ class DoctorService {
 
   async getStudents(doctorId: string): Promise<{ data: User[] }> {
     try {
-      return await ApiService.get(`/doctor/${doctorId}/students`);
+      const response = await ApiService.get(`/doctor/${doctorId}/students`);
+      return { data: response.data };
     } catch (error) {
       console.warn('API getStudents failed, using dummy data:', error);
       return { data: [] };
@@ -100,7 +104,8 @@ class DoctorService {
 
   async getQuestions(doctorId: string): Promise<{ data: Question[] }> {
     try {
-      return await ApiService.get(`/doctor/${doctorId}/questions`);
+      const response = await ApiService.get(`/doctor/${doctorId}/questions`);
+      return { data: response.data };
     } catch (error) {
       console.warn('API getQuestions failed, using dummy data:', error);
       return { data: dummyQuestions };
@@ -109,7 +114,8 @@ class DoctorService {
 
   async getQuestionChoices(questionId: string): Promise<{ data: Choice[] }> {
     try {
-      return await ApiService.get(`/doctor/questions/${questionId}/choices`);
+      const response = await ApiService.get(`/doctor/questions/${questionId}/choices`);
+      return { data: response.data };
     } catch (error) {
       console.warn('API getQuestionChoices failed, using dummy data:', error);
       return { data: dummyChoices.filter(c => c.question_id === questionId) };
@@ -118,7 +124,11 @@ class DoctorService {
 
   async createQuestion(questionData: CreateQuestionData): Promise<{ data: Question; message: string }> {
     try {
-      return await ApiService.post('/doctor/questions', questionData);
+      const response = await ApiService.post('/doctor/questions', questionData);
+      return { 
+        data: response.data, 
+        message: response.message || 'Question created successfully' 
+      };
     } catch (error) {
       console.warn('API createQuestion failed, using dummy data:', error);
       const dummyQuestion = {
@@ -136,10 +146,10 @@ class DoctorService {
 
   async updateQuestion(questionId: string, questionData: UpdateQuestionData): Promise<{ data: Question; message: string }> {
     try {
-      const response = await ApiService.put<{ question: Question; message: string }>(`/doctor/questions/${questionId}`, questionData);
+      const response = await ApiService.put(`/doctor/questions/${questionId}`, questionData);
       return {
-        data: response.question,
-        message: response.message
+        data: response.data,
+        message: response.message || 'Question updated successfully'
       };
     } catch (error) {
       console.warn('API updateQuestion failed, using dummy response:', error);
@@ -158,7 +168,8 @@ class DoctorService {
 
   async deleteQuestion(questionId: string): Promise<{ message: string }> {
     try {
-      return await ApiService.delete(`/doctor/questions/${questionId}`);
+      const response = await ApiService.delete(`/doctor/questions/${questionId}`);
+      return { message: response.message || 'Question deleted successfully' };
     } catch (error) {
       console.warn('API deleteQuestion failed, using dummy response:', error);
       return { message: 'Question deleted successfully' };
@@ -167,7 +178,11 @@ class DoctorService {
 
   async createChoice(questionId: string, choiceData: CreateChoiceData): Promise<{ data: Choice; message: string }> {
     try {
-      return await ApiService.post(`/doctor/questions/${questionId}/choices`, choiceData);
+      const response = await ApiService.post(`/doctor/questions/${questionId}/choices`, choiceData);
+      return {
+        data: response.data,
+        message: response.message || 'Choice created successfully'
+      };
     } catch (error) {
       console.warn('API createChoice failed, using dummy data:', error);
       const dummyChoice = {
@@ -184,7 +199,8 @@ class DoctorService {
 
   async updateChoice(choiceId: string, choiceData: UpdateChoiceData): Promise<{ data: Choice }> {
     try {
-      return await ApiService.put(`/doctor/choices/${choiceId}`, choiceData);
+      const response = await ApiService.put(`/doctor/choices/${choiceId}`, choiceData);
+      return { data: response.data };
     } catch (error) {
       console.warn('API updateChoice failed, using dummy response:', error);
       const existingChoice = dummyChoices.find(c => c.id === choiceId) || dummyChoices[0];

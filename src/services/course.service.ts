@@ -1,3 +1,4 @@
+
 import ApiService from './api.service';
 import { dummyCourses } from '@/data/dummy-comprehensive';
 import AuthService from './auth.service';
@@ -46,7 +47,8 @@ class CourseService {
     try {
       const user = await AuthService.getCurrentUser();
       const endpoint = user?.role === 'admin' ? '/admin/courses' : '/courses';
-      return await ApiService.get(endpoint);
+      const response = await ApiService.get(endpoint);
+      return { data: response.data };
     } catch (error) {
       console.warn('API getAllCourses failed, using dummy data:', error);
       return { data: dummyCourses };
@@ -55,7 +57,8 @@ class CourseService {
 
   async getCourseById(courseId: string): Promise<{ data: Course }> {
     try {
-      return await ApiService.get(`/admin/courses/${courseId}`);
+      const response = await ApiService.get(`/admin/courses/${courseId}`);
+      return { data: response.data };
     } catch (error) {
       console.warn('API getCourseById failed, using dummy data:', error);
       const course = dummyCourses.find(c => c.id === courseId) || dummyCourses[0];
@@ -65,7 +68,11 @@ class CourseService {
 
   async createCourse(courseData: CreateCourseData): Promise<{ data: Course; message: string }> {
     try {
-      return await ApiService.post('/admin/courses', courseData);
+      const response = await ApiService.post('/admin/courses', courseData);
+      return { 
+        data: response.data, 
+        message: response.message || 'Course created successfully' 
+      };
     } catch (error) {
       console.warn('API createCourse failed, using dummy response:', error);
       const newCourse: Course = {
@@ -81,7 +88,11 @@ class CourseService {
 
   async updateCourse(courseId: string, courseData: UpdateCourseData): Promise<{ data: Course; message: string }> {
     try {
-      return await ApiService.put(`/admin/courses/${courseId}`, courseData);
+      const response = await ApiService.put(`/admin/courses/${courseId}`, courseData);
+      return { 
+        data: response.data, 
+        message: response.message || 'Course updated successfully' 
+      };
     } catch (error) {
       console.warn('API updateCourse failed, using dummy response:', error);
       const existingCourse = dummyCourses.find(c => c.id === courseId) || dummyCourses[0];
@@ -96,7 +107,8 @@ class CourseService {
 
   async deleteCourse(courseId: string): Promise<{ message: string }> {
     try {
-      return await ApiService.delete(`/admin/courses/${courseId}`);
+      const response = await ApiService.delete(`/admin/courses/${courseId}`);
+      return { message: response.message || 'Course deleted successfully' };
     } catch (error) {
       console.warn('API deleteCourse failed, using dummy response:', error);
       return { message: 'Course deleted successfully' };
@@ -106,7 +118,8 @@ class CourseService {
   // Student-specific methods
   async getStudentCourses(): Promise<{ data: any[] }> {
     try {
-      return await ApiService.get('/student/courses');
+      const response = await ApiService.get('/student/courses');
+      return { data: response.data };
     } catch (error) {
       console.warn('API getStudentCourses failed, using dummy data:', error);
       return { data: [] };
@@ -115,7 +128,8 @@ class CourseService {
 
   async unenrollFromCourse(courseId: string): Promise<{ message: string }> {
     try {
-      return await ApiService.delete(`/student/courses/${courseId}/unenroll`);
+      const response = await ApiService.delete(`/student/courses/${courseId}/unenroll`);
+      return { message: response.message || 'Successfully unenrolled from course' };
     } catch (error) {
       console.warn('API unenrollFromCourse failed, using dummy response:', error);
       return { message: 'Successfully unenrolled from course' };
@@ -125,7 +139,8 @@ class CourseService {
   // Doctor-specific methods
   async getDoctorCourses(): Promise<{ data: Course[] }> {
     try {
-      return await ApiService.get('/doctor/courses');
+      const response = await ApiService.get('/doctor/courses');
+      return { data: response.data };
     } catch (error) {
       console.warn('API getDoctorCourses failed, using dummy data:', error);
       return { data: dummyCourses };

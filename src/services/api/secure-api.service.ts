@@ -53,7 +53,7 @@ secureApiClient.interceptors.response.use(
     }
     return response;
   },
-  (error: AxiosError) => {
+  (error: AxiosError<any>) => {
     // Handle authentication errors
     if (error.response?.status === 401) {
       localStorage.removeItem('auth_token');
@@ -62,11 +62,12 @@ secureApiClient.interceptors.response.use(
     }
     
     // Standardize error response
+    const errorData = error.response?.data || {};
     const standardError: ApiErrorResponse = {
       success: false,
-      message: error.response?.data?.message || error.message || 'An unexpected error occurred',
-      errors: error.response?.data?.errors,
-      error_code: error.response?.data?.error_code || `HTTP_${error.response?.status}`,
+      message: errorData.message || error.message || 'An unexpected error occurred',
+      errors: errorData.errors,
+      error_code: errorData.error_code || `HTTP_${error.response?.status}`,
       meta: {
         timestamp: new Date().toISOString(),
         request_id: error.config?.headers?.['X-Request-ID']

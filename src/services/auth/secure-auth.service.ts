@@ -44,9 +44,9 @@ export interface PasswordReset {
 
 class SecureAuthService {
   // Authentication with secure token handling
-  async login(credentials: LoginCredentials): Promise<AuthResponse> {
+  async login(credentials: LoginCredentials): Promise<{ success: boolean; data: { token: string; user: SafeUserResponse; expires_in: number; refresh_token?: string; }; message?: string }> {
     try {
-      const response = await SecureApiService.post<AuthResponse['data']>(
+      const response = await SecureApiService.post<{ token: string; user: SafeUserResponse; expires_in: number; refresh_token?: string; }>(
         API_ENDPOINTS.AUTH.LOGIN, 
         credentials
       );
@@ -56,7 +56,7 @@ class SecureAuthService {
         return {
           success: true,
           data: response.data,
-          message: 'Login successful'
+          message: response.message || 'Login successful'
         };
       }
       
@@ -100,16 +100,16 @@ class SecureAuthService {
     }
   }
 
-  async refreshToken(): Promise<AuthResponse> {
+  async refreshToken(): Promise<{ success: boolean; data: { token: string; user: SafeUserResponse; expires_in: number; refresh_token?: string; }; message?: string }> {
     try {
-      const response = await SecureApiService.post<AuthResponse['data']>(API_ENDPOINTS.AUTH.REFRESH);
+      const response = await SecureApiService.post<{ token: string; user: SafeUserResponse; expires_in: number; refresh_token?: string; }>(API_ENDPOINTS.AUTH.REFRESH);
       
       if (response.success && response.data.token) {
         this.setAuthData(response.data.token, response.data.user);
         return {
           success: true,
           data: response.data,
-          message: 'Token refreshed successfully'
+          message: response.message || 'Token refreshed successfully'
         };
       }
       
@@ -301,3 +301,6 @@ class SecureAuthService {
 }
 
 export default new SecureAuthService();
+
+// Re-export SafeUserResponse as User for compatibility
+export type User = SafeUserResponse;
