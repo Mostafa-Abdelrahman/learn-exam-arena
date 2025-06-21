@@ -50,8 +50,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AuthProvider>
-          <BrowserRouter>
+        <BrowserRouter>
+          <AuthProvider>
             <div className="min-h-screen bg-background">
               <Routes>
                 {/* Public Routes */}
@@ -60,7 +60,7 @@ function App() {
                 {/* Protected Routes */}
                 <Route path="/" element={
                   <ProtectedRoute>
-                    <DashboardLayout role="admin" />
+                    <DashboardLayout />
                   </ProtectedRoute>
                 }>
                   {/* Default redirect based on role */}
@@ -101,7 +101,7 @@ function App() {
                   {/* Doctor Routes */}
                   <Route path="doctor/dashboard" element={
                     <ProtectedRoute allowedRoles={['doctor']}>
-                      <AdminDashboard />
+                      <DoctorDashboard />
                     </ProtectedRoute>
                   } />
                   <Route path="doctor/exams" element={
@@ -176,8 +176,8 @@ function App() {
             </div>
             <Toaster />
             <Sonner />
-          </BrowserRouter>
-        </AuthProvider>
+          </AuthProvider>
+        </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );
