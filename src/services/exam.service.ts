@@ -58,7 +58,8 @@ class ExamService {
   async getExam(examId: string): Promise<Exam> {
     try {
       const response = await ApiService.get(`/exams/${examId}`);
-      return response.data || this.getDefaultExam(examId);
+      const responseData = response.data || response;
+      return responseData || this.getDefaultExam(examId);
     } catch (error) {
       console.warn('API getExam failed, using dummy data:', error);
       return dummyExamsComprehensive.find(exam => exam.id === examId) || this.getDefaultExam(examId);
@@ -69,7 +70,8 @@ class ExamService {
   async getExamById(examId: string): Promise<Exam> {
     try {
       const response = await ApiService.get(`/exams/${examId}`);
-      return response.data || this.getDefaultExam(examId);
+      const responseData = response.data || response;
+      return responseData || this.getDefaultExam(examId);
     } catch (error) {
       console.warn('API getExamById failed, using dummy data:', error);
       return dummyExamsComprehensive.find(exam => exam.id === examId) || this.getDefaultExam(examId);
@@ -151,12 +153,13 @@ class ExamService {
   async startExam(examId: string): Promise<{ message: string; session_id: string; student_exam_id?: string; questions?: any[] }> {
     try {
       const response = await ApiService.post(`/student/exams/${examId}/start`);
-      const data = response.data || {};
+      const responseData = response.data || response;
+      const data = responseData || {};
       return {
         message: response.message || 'Exam started successfully',
-        session_id: (data as any).session_id || `session-${Date.now()}`,
-        student_exam_id: (data as any).student_exam_id,
-        questions: (data as any).questions
+        session_id: data.session_id || `session-${Date.now()}`,
+        student_exam_id: data.student_exam_id,
+        questions: data.questions
       };
     } catch (error) {
       console.warn('API startExam failed, using dummy response:', error);
@@ -188,7 +191,8 @@ class ExamService {
   async takeExam(examId: string): Promise<Exam> {
     try {
       const response = await ApiService.get(`/student/exams/${examId}/take`);
-      return response.data || this.getDefaultExam(examId);
+      const responseData = response.data || response;
+      return responseData || this.getDefaultExam(examId);
     } catch (error) {
       console.warn('API takeExam failed, using dummy data:', error);
       const exam = dummyExamsComprehensive.find(exam => exam.id === examId) || this.getDefaultExam(examId);
@@ -200,10 +204,11 @@ class ExamService {
   async submitExam(examId: string, answers: any[]): Promise<{ message: string; score?: number }> {
     try {
       const response = await ApiService.post(`/student/exams/${examId}/submit`, { answers });
-      const data = response.data || {};
+      const responseData = response.data || response;
+      const data = responseData || {};
       return {
         message: response.message || 'Exam submitted successfully',
-        score: (data as any).score
+        score: data.score
       };
     } catch (error) {
       console.warn('API submitExam failed, using dummy response:', error);
@@ -218,7 +223,8 @@ class ExamService {
   async createExam(examData: CreateExamData): Promise<{ exam: Exam }> {
     try {
       const response = await ApiService.post('/doctor/exams', examData);
-      return { exam: response.data || this.createDefaultExam(examData) };
+      const responseData = response.data || response;
+      return { exam: responseData || this.createDefaultExam(examData) };
     } catch (error) {
       console.warn('API createExam failed, using dummy response:', error);
       const newExam = this.createDefaultExam(examData);
@@ -230,7 +236,8 @@ class ExamService {
   async updateExam(examId: string, examData: UpdateExamData): Promise<{ exam: Exam }> {
     try {
       const response = await ApiService.put(`/doctor/exams/${examId}`, examData);
-      return { exam: response.data || this.getDefaultExam(examId) };
+      const responseData = response.data || response;
+      return { exam: responseData || this.getDefaultExam(examId) };
     } catch (error) {
       console.warn('API updateExam failed, using dummy response:', error);
       const existingExam = dummyExamsComprehensive.find(e => e.id === examId) || this.getDefaultExam(examId);

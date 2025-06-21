@@ -1,4 +1,3 @@
-
 import ApiService from './api.service';
 
 export interface QuestionFilters {
@@ -87,7 +86,8 @@ class QuestionService {
   async getQuestionById(questionId: string): Promise<{ data: Question }> {
     try {
       const response = await ApiService.get(`/questions/${questionId}`);
-      return { data: response.data || this.createDefaultQuestion() };
+      const responseData = response.data || response;
+      return { data: responseData || this.createDefaultQuestion() };
     } catch (error) {
       console.warn('API getQuestionById failed:', error);
       return { data: this.createDefaultQuestion() };
@@ -97,8 +97,9 @@ class QuestionService {
   async createQuestion(questionData: CreateQuestionData): Promise<{ question: Question; message: string }> {
     try {
       const response = await ApiService.post('/doctor/questions', questionData);
+      const responseData = response.data || response;
       return { 
-        question: response.data || this.createDefaultQuestion(questionData), 
+        question: responseData || this.createDefaultQuestion(questionData), 
         message: response.message || 'Question created successfully' 
       };
     } catch (error) {
@@ -110,8 +111,9 @@ class QuestionService {
   async updateQuestion(questionId: string, questionData: UpdateQuestionData): Promise<{ question: Question; message: string }> {
     try {
       const response = await ApiService.put(`/doctor/questions/${questionId}`, questionData);
+      const responseData = response.data || response;
       return { 
-        question: response.data || this.createDefaultQuestion(questionData), 
+        question: responseData || this.createDefaultQuestion(questionData), 
         message: response.message || 'Question updated successfully' 
       };
     } catch (error) {
@@ -157,10 +159,11 @@ class QuestionService {
     try {
       const additionalData = courseId ? { course_id: courseId } : undefined;
       const response = await ApiService.upload('/doctor/questions/import', file, additionalData);
-      const data = response.data || {};
+      const responseData = response.data || response;
+      const data = responseData || {};
       return { 
-        imported: (data as any).imported || 0, 
-        errors: (data as any).errors || [] 
+        imported: data.imported || 0, 
+        errors: data.errors || [] 
       };
     } catch (error) {
       console.warn('API importQuestions failed:', error);
@@ -181,8 +184,9 @@ class QuestionService {
   async duplicateQuestion(questionId: string, newCourseId?: string): Promise<{ question: Question; message: string }> {
     try {
       const response = await ApiService.post(`/doctor/questions/${questionId}/duplicate`, { course_id: newCourseId });
+      const responseData = response.data || response;
       return { 
-        question: response.data || this.createDefaultQuestion(), 
+        question: responseData || this.createDefaultQuestion(), 
         message: response.message || 'Question duplicated successfully' 
       };
     } catch (error) {
@@ -195,10 +199,11 @@ class QuestionService {
   async bulkDeleteQuestions(questionIds: string[]): Promise<{ deleted: number; errors: any[] }> {
     try {
       const response = await ApiService.post('/doctor/questions/bulk/delete', { question_ids: questionIds });
-      const data = response.data || {};
+      const responseData = response.data || response;
+      const data = responseData || {};
       return { 
-        deleted: (data as any).deleted || 0, 
-        errors: (data as any).errors || [] 
+        deleted: data.deleted || 0, 
+        errors: data.errors || [] 
       };
     } catch (error) {
       console.warn('API bulkDeleteQuestions failed:', error);
@@ -209,10 +214,11 @@ class QuestionService {
   async bulkUpdateQuestions(questionIds: string[], updates: Partial<UpdateQuestionData>): Promise<{ updated: number; errors: any[] }> {
     try {
       const response = await ApiService.put('/doctor/questions/bulk', { question_ids: questionIds, updates });
-      const data = response.data || {};
+      const responseData = response.data || response;
+      const data = responseData || {};
       return { 
-        updated: (data as any).updated || 0, 
-        errors: (data as any).errors || [] 
+        updated: data.updated || 0, 
+        errors: data.errors || [] 
       };
     } catch (error) {
       console.warn('API bulkUpdateQuestions failed:', error);
@@ -224,7 +230,8 @@ class QuestionService {
   async getQuestionStats(): Promise<{ data: QuestionStats }> {
     try {
       const response = await ApiService.get('/admin/questions/stats');
-      return { data: response.data || this.getDefaultStats() };
+      const responseData = response.data || response;
+      return { data: responseData || this.getDefaultStats() };
     } catch (error) {
       console.warn('API getQuestionStats failed:', error);
       return { data: this.getDefaultStats() };
@@ -245,10 +252,11 @@ class QuestionService {
   async validateQuestion(questionData: CreateQuestionData | UpdateQuestionData): Promise<{ valid: boolean; errors: string[] }> {
     try {
       const response = await ApiService.post('/doctor/questions/validate', questionData);
-      const data = response.data || {};
+      const responseData = response.data || response;
+      const data = responseData || {};
       return { 
-        valid: (data as any).valid || false, 
-        errors: (data as any).errors || [] 
+        valid: data.valid || false, 
+        errors: data.errors || [] 
       };
     } catch (error) {
       console.warn('API validateQuestion failed:', error);

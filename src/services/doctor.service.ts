@@ -59,7 +59,8 @@ class DoctorService {
   async getDoctorStats(doctorId: string): Promise<{ data: DoctorStats }> {
     try {
       const response = await ApiService.get(`/doctor/${doctorId}/stats`);
-      return { data: response.data || this.getDefaultStats() };
+      const responseData = response.data || response;
+      return { data: responseData || this.getDefaultStats() };
     } catch (error) {
       console.warn('API getDoctorStats failed, using dummy data:', error);
       return { data: this.getDefaultStats() };
@@ -119,8 +120,9 @@ class DoctorService {
   async createQuestion(questionData: CreateQuestionData): Promise<{ data: Question; message: string }> {
     try {
       const response = await ApiService.post('/doctor/questions', questionData);
+      const responseData = response.data || response;
       return { 
-        data: response.data || this.createDefaultQuestion(questionData),
+        data: responseData || this.createDefaultQuestion(questionData),
         message: response.message || 'Question created successfully' 
       };
     } catch (error) {
@@ -136,8 +138,9 @@ class DoctorService {
   async updateQuestion(questionId: string, questionData: UpdateQuestionData): Promise<{ data: Question; message: string }> {
     try {
       const response = await ApiService.put(`/doctor/questions/${questionId}`, questionData);
+      const responseData = response.data || response;
       return {
-        data: response.data || this.createDefaultQuestion({ ...questionData, text: questionData.text || '', type: 'mcq', created_by: '' }),
+        data: responseData || this.createDefaultQuestion({ ...questionData, text: questionData.text || '', type: 'mcq', created_by: '' }),
         message: response.message || 'Question updated successfully'
       };
     } catch (error) {
@@ -168,8 +171,9 @@ class DoctorService {
   async createChoice(questionId: string, choiceData: CreateChoiceData): Promise<{ data: Choice; message: string }> {
     try {
       const response = await ApiService.post(`/doctor/questions/${questionId}/choices`, choiceData);
+      const responseData = response.data || response;
       return {
-        data: response.data || this.createDefaultChoice(questionId, choiceData),
+        data: responseData || this.createDefaultChoice(questionId, choiceData),
         message: response.message || 'Choice created successfully'
       };
     } catch (error) {
@@ -185,7 +189,8 @@ class DoctorService {
   async updateChoice(choiceId: string, choiceData: UpdateChoiceData): Promise<{ data: Choice }> {
     try {
       const response = await ApiService.put(`/doctor/choices/${choiceId}`, choiceData);
-      return { data: response.data || this.createDefaultChoice('', { text: choiceData.text || '', is_correct: choiceData.is_correct || false }) };
+      const responseData = response.data || response;
+      return { data: responseData || this.createDefaultChoice('', { text: choiceData.text || '', is_correct: choiceData.is_correct || false }) };
     } catch (error) {
       console.warn('API updateChoice failed, using dummy response:', error);
       const existingChoice = dummyChoices.find(c => c.id === choiceId) || dummyChoices[0];

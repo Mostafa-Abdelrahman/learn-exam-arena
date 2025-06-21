@@ -50,9 +50,10 @@ class StudentService {
   async updateStudentProfile(studentId: string, profileData: any): Promise<{ message: string; student: any }> {
     try {
       const response = await ApiService.put(`/student/${studentId}/profile`, profileData);
+      const responseData = response.data || response;
       return {
         message: response.message || 'Profile updated successfully',
-        student: response.data?.student || {
+        student: responseData?.student || {
           id: studentId,
           ...profileData,
           updated_at: new Date().toISOString()

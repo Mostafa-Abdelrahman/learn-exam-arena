@@ -1,4 +1,3 @@
-
 import ApiService from './api.service';
 
 export interface ScheduleEvent {
@@ -64,7 +63,8 @@ class SchedulingService {
   async getScheduleById(scheduleId: string): Promise<{ data: ScheduleEvent }> {
     try {
       const response = await ApiService.get(`/schedule/${scheduleId}`);
-      return { data: response.data || this.createDefaultEvent() };
+      const responseData = response.data || response;
+      return { data: responseData || this.createDefaultEvent() };
     } catch (error) {
       console.warn('API getScheduleById failed:', error);
       return { data: this.createDefaultEvent() };
@@ -74,8 +74,9 @@ class SchedulingService {
   async createScheduleEvent(eventData: CreateScheduleData): Promise<{ event: ScheduleEvent; message: string }> {
     try {
       const response = await ApiService.post('/schedule', eventData);
+      const responseData = response.data || response;
       return {
-        event: response.data || this.createDefaultEvent(eventData),
+        event: responseData || this.createDefaultEvent(eventData),
         message: response.message || 'Event created successfully'
       };
     } catch (error) {
@@ -90,8 +91,9 @@ class SchedulingService {
   async updateScheduleEvent(scheduleId: string, eventData: Partial<CreateScheduleData>): Promise<{ event: ScheduleEvent; message: string }> {
     try {
       const response = await ApiService.put(`/schedule/${scheduleId}`, eventData);
+      const responseData = response.data || response;
       return {
-        event: response.data || this.createDefaultEvent(eventData as CreateScheduleData),
+        event: responseData || this.createDefaultEvent(eventData as CreateScheduleData),
         message: response.message || 'Event updated successfully'
       };
     } catch (error) {
@@ -187,8 +189,9 @@ class SchedulingService {
   }): Promise<{ event: ScheduleEvent; message: string }> {
     try {
       const response = await ApiService.post('/doctor/schedule/exam', examData);
+      const responseData = response.data || response;
       return {
-        event: response.data || this.createDefaultEvent(),
+        event: responseData || this.createDefaultEvent(),
         message: response.message || 'Exam scheduled successfully'
       };
     } catch (error) {
@@ -220,10 +223,11 @@ class SchedulingService {
   }): Promise<{ conflicts: string[]; suggestions: TimeSlot[] }> {
     try {
       const response = await ApiService.post('/schedule/check-conflicts', examData);
-      const data = response.data || {};
+      const responseData = response.data || response;
+      const data = responseData || {};
       return {
-        conflicts: (data as any).conflicts || [],
-        suggestions: (data as any).suggestions || []
+        conflicts: data.conflicts || [],
+        suggestions: data.suggestions || []
       };
     } catch (error) {
       console.warn('API getExamScheduleConflicts failed:', error);
@@ -245,10 +249,11 @@ class SchedulingService {
   async importFromCalendar(file: File): Promise<{ imported: number; errors: any[] }> {
     try {
       const response = await ApiService.upload('/schedule/import', file);
-      const data = response.data || {};
+      const responseData = response.data || response;
+      const data = responseData || {};
       return {
-        imported: (data as any).imported || 0,
-        errors: (data as any).errors || []
+        imported: data.imported || 0,
+        errors: data.errors || []
       };
     } catch (error) {
       console.warn('API importFromCalendar failed:', error);
