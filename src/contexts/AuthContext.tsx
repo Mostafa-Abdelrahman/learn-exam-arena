@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -79,10 +80,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setError(null);
       
-      const response = await AuthService.login(credentials.email, credentials.password);
+      const response = await AuthService.login(credentials);
       
-      if (response?.user) {
-        setUser(response.user);
+      if (response?.data?.user) {
+        setUser(response.data.user);
         setIsAuthenticated(true);
         
         toast({
@@ -91,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         
         // Redirect based on user role
-        const role = response.user.role;
+        const role = response.data.user.role;
         if (role === "admin") {
           navigate("/admin/dashboard");
         } else if (role === "doctor") {

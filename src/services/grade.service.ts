@@ -33,19 +33,23 @@ export interface GradeSubmission {
 
 class GradeService {
   async getGrades(): Promise<{ data: Grade[] }> {
-    return await ApiService.get('/doctor/grades');
+    const response = await ApiService.get('/doctor/grades');
+    return { data: response.data };
   }
 
   async gradeExam(examId: string, studentId: string, gradeData: any): Promise<{ message: string }> {
-    return await ApiService.post(`/doctor/exams/${examId}/students/${studentId}/grade`, gradeData);
+    const response = await ApiService.post(`/doctor/exams/${examId}/students/${studentId}/grade`, gradeData);
+    return { message: response.message || 'Grade submitted successfully' };
   }
 
   async getExamSubmissions(examId: string): Promise<{ data: ExamSubmission[] }> {
-    return await ApiService.get(`/doctor/exams/${examId}/submissions`);
+    const response = await ApiService.get(`/doctor/exams/${examId}/submissions`);
+    return { data: response.data };
   }
 
   async submitGrade(gradeData: GradeSubmission): Promise<{ message: string }> {
-    return await ApiService.post('/doctor/grades', gradeData);
+    const response = await ApiService.post('/doctor/grades', gradeData);
+    return { message: response.message || 'Grade submitted successfully' };
   }
 }
 
