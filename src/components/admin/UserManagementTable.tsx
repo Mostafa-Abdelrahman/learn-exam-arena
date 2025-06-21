@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,14 +17,14 @@ interface UserManagementTableProps {
 
 const UserManagementTable = ({ users, onCreateUser, onEditUser, onDeleteUser }: UserManagementTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState<"" | "student" | "doctor" | "admin">("");
+  const [roleFilter, setRoleFilter] = useState<"all" | "student" | "doctor" | "admin">("all");
 
   const filteredUsers = users?.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.role.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesRole = !roleFilter || user.role === roleFilter;
+    const matchesRole = roleFilter === "all" || user.role === roleFilter;
     
     return matchesSearch && matchesRole;
   }) || [];
@@ -60,12 +59,12 @@ const UserManagementTable = ({ users, onCreateUser, onEditUser, onDeleteUser }: 
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Select value={roleFilter} onValueChange={(value: "" | "student" | "doctor" | "admin") => setRoleFilter(value)}>
+            <Select value={roleFilter} onValueChange={(value: "all" | "student" | "doctor" | "admin") => setRoleFilter(value)}>
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Filter by role" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Roles</SelectItem>
+                <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="admin">Admins</SelectItem>
                 <SelectItem value="doctor">Doctors</SelectItem>
                 <SelectItem value="student">Students</SelectItem>
