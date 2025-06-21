@@ -1,6 +1,7 @@
 
 import ApiService from './api.service';
 import { dummyQuestions, dummyChoices } from '@/data/dummy-questions';
+import { STORAGE_KEYS, getFromStorage, saveToStorage, mockQuestions } from '@/data/exam-data';
 import { SafeUserResponse as User } from '@/types/api-response';
 
 export interface DoctorStats {
@@ -102,8 +103,8 @@ class DoctorService {
       const response = await ApiService.get(`/doctor/${doctorId}/questions`);
       return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
-      console.warn('API getQuestions failed, using dummy data:', error);
-      return { data: dummyQuestions };
+      console.warn('API getQuestions failed, using mock data:', error);
+      return { data: getFromStorage(STORAGE_KEYS.QUESTIONS, mockQuestions) };
     }
   }
 
@@ -112,8 +113,10 @@ class DoctorService {
       const response = await ApiService.get(`/doctor/questions/${questionId}/choices`);
       return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
-      console.warn('API getQuestionChoices failed, using dummy data:', error);
-      return { data: dummyChoices.filter(c => c.question_id === questionId) };
+      console.warn('API getQuestionChoices failed, using mock data:', error);
+      const questions = getFromStorage(STORAGE_KEYS.QUESTIONS, mockQuestions);
+      const question = questions.find((q: Question) => q.id === questionId);
+      return { data: question?.choices || [] };
     }
   }
 
@@ -126,11 +129,17 @@ class DoctorService {
         message: response.message || 'Question created successfully' 
       };
     } catch (error) {
-      console.warn('API createQuestion failed, using dummy data:', error);
-      const dummyQuestion = this.createDefaultQuestion(questionData);
+      console.warn('API createQuestion failed, using mock creation:', error);
+      const newQuestion = this.createDefaultQuestion(questionData);
+      
+      // Save to mock data
+      const questions = getFromStorage(STORAGE_KEYS.QUESTIONS, mockQuestions);
+      questions.push(newQuestion);
+      saveToStorage(STORAGE_KEYS.QUESTIONS, questions);
+      
       return {
-        data: dummyQuestion,
-        message: 'Question created successfully (dummy data)'
+        data: newQuestion,
+        message: 'Question created successfully'
       };
     }
   }
@@ -144,16 +153,26 @@ class DoctorService {
         message: response.message || 'Question updated successfully'
       };
     } catch (error) {
-      console.warn('API updateQuestion failed, using dummy response:', error);
-      const existingQuestion = dummyQuestions.find(q => q.id === questionId) || dummyQuestions[0];
-      const updatedQuestion = {
-        ...existingQuestion,
-        ...questionData,
-        updated_at: new Date().toISOString()
-      };
+      console.warn('API updateQuestion failed, using mock update:', error);
+      const questions = getFromStorage(STORAGE_KEYS.QUESTIONS, mockQuestions);
+      const questionIndex = questions.findIndex((q: Question) => q.id === questionId);
+      
+      if (questionIndex !== -1) {
+        questions[questionIndex] = {
+          ...questions[questionIndex],
+          ...questionData,
+          updated_at: new Date().toISOString()
+        };
+        saveToStorage(STORAGE_KEYS.QUESTIONS, questions);
+        return { 
+          data: questions[questionIndex],
+          message: 'Question updated successfully'
+        };
+      }
+      
       return { 
-        data: updatedQuestion,
-        message: 'Question updated successfully (dummy data)'
+        data: this.createDefaultQuestion({ text: '', type: 'mcq', created_by: '' }),
+        message: 'Question updated successfully'
       };
     }
   }
@@ -163,7 +182,10 @@ class DoctorService {
       const response = await ApiService.delete(`/doctor/questions/${questionId}`);
       return { message: response.message || 'Question deleted successfully' };
     } catch (error) {
-      console.warn('API deleteQuestion failed, using dummy response:', error);
+      console.warn('API deleteQuestion failed, using mock deletion:', error);
+      const questions = getFromStorage(STORAGE_KEYS.QUESTIONS, mockQuestions);
+      const filteredQuestions = questions.filter((q: Question) => q.id !== questionId);
+      saveToStorage(STORAGE_KEYS.QUESTIONS, filteredQuestions);
       return { message: 'Question deleted successfully' };
     }
   }
@@ -177,11 +199,24 @@ class DoctorService {
         message: response.message || 'Choice created successfully'
       };
     } catch (error) {
-      console.warn('API createChoice failed, using dummy data:', error);
-      const dummyChoice = this.createDefaultChoice(questionId, choiceData);
+      console.warn('API createChoice failed, using mock creation:', error);
+      const newChoice = this.createDefaultChoice(questionId, choiceData);
+      
+      // Add choice to question in mock data
+      const questions = getFromStorage(STORAGE_KEYS.QUESTIONS, mockQuestions);
+      const questionIndex = questions.findIndex((q: Question) => q.id === questionId);
+      
+      if (questionIndex !== -1) {
+        if (!questions[questionIndex].choices) {
+          questions[questionIndex].choices = [];
+        }
+        questions[questionIndex].choices.push(newChoice);
+        saveToStorage(STORAGE_KEYS.QUESTIONS, questions);
+      }
+      
       return {
-        data: dummyChoice,
-        message: 'Choice created successfully (dummy data)'
+        data: newChoice,
+        message: 'Choice created successfully'
       };
     }
   }
@@ -192,13 +227,25 @@ class DoctorService {
       const responseData = response.data || response;
       return { data: responseData || this.createDefaultChoice('', { text: choiceData.text || '', is_correct: choiceData.is_correct || false }) };
     } catch (error) {
-      console.warn('API updateChoice failed, using dummy response:', error);
-      const existingChoice = dummyChoices.find(c => c.id === choiceId) || dummyChoices[0];
-      const updatedChoice = {
-        ...existingChoice,
-        ...choiceData
-      };
-      return { data: updatedChoice };
+      console.warn('API updateChoice failed, using mock update:', error);
+      const questions = getFromStorage(STORAGE_KEYS.QUESTIONS, mockQuestions);
+      
+      // Find and update choice
+      for (let question of questions) {
+        if (question.choices) {
+          const choiceIndex = question.choices.findIndex((c: Choice) => c.id === choiceId);
+          if (choiceIndex !== -1) {
+            question.choices[choiceIndex] = {
+              ...question.choices[choiceIndex],
+              ...choiceData
+            };
+            saveToStorage(STORAGE_KEYS.QUESTIONS, questions);
+            return { data: question.choices[choiceIndex] };
+          }
+        }
+      }
+      
+      return { data: this.createDefaultChoice('', { text: '', is_correct: false }) };
     }
   }
 

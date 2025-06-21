@@ -1,4 +1,3 @@
-
 import ApiService from './api.service';
 import { dummyCourses } from '@/data/dummy-comprehensive';
 import AuthService from './auth.service';
@@ -63,7 +62,7 @@ class CourseService {
       return { data: responseData || this.createDefaultCourse({ name: 'Default Course', code: 'DEFAULT', credits: 3, semester: '1', major_id: '', status: 'active', academic_year: '2024' }) };
     } catch (error) {
       console.warn('API getCourseById failed, using dummy data:', error);
-      const course = dummyCourses.find(c => c.id === courseId) || dummyCourses[0];
+      const course = dummyCourses.find(c => c.id === courseId) || this.createDefaultCourse({ name: 'Default Course', code: 'DEFAULT', credits: 3, semester: '1', major_id: '', status: 'active', academic_year: '2024' });
       return { data: course };
     }
   }
@@ -93,7 +92,7 @@ class CourseService {
       };
     } catch (error) {
       console.warn('API updateCourse failed, using dummy response:', error);
-      const existingCourse = dummyCourses.find(c => c.id === courseId) || dummyCourses[0];
+      const existingCourse = dummyCourses.find(c => c.id === courseId) || this.createDefaultCourse({ name: 'Default Course', code: 'DEFAULT', credits: 3, semester: '1', major_id: '', status: 'active', academic_year: '2024' });
       const updatedCourse = {
         ...existingCourse,
         ...courseData,

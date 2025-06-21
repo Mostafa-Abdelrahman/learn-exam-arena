@@ -1,12 +1,15 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ExamService, CourseService } from "@/services";
 import { Button } from "@/components/ui/button";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ExamCard from "@/components/exams/ExamCard";
 import AddExamDialog, { ExamFormData } from "@/components/exams/AddExamDialog";
 import EditExamDialog from "@/components/exams/EditExamDialog";
+import AddExamQuestionDialog from "@/components/exams/AddExamQuestionDialog";
+import { getFromStorage, STORAGE_KEYS } from "@/data/exam-data";
 
 const DoctorExams = () => {
   const { currentUser } = useAuth();
@@ -16,7 +19,9 @@ const DoctorExams = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddQuestionDialogOpen, setIsAddQuestionDialogOpen] = useState(false);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
+  const [selectedExamForQuestions, setSelectedExamForQuestions] = useState<string>("");
 
   useEffect(() => {
     fetchData();
@@ -26,12 +31,12 @@ const DoctorExams = () => {
     try {
       setLoading(true);
       
-      const [examsResponse, coursesResponse] = await Promise.all([
-        ExamService.getAllExams(),
-        CourseService.getDoctorCourses()
-      ]);
+      // Get mock data from local storage
+      const mockExams = getFromStorage(STORAGE_KEYS.EXAMS, []);
+      setExams(mockExams);
       
-      setExams(examsResponse.data);
+      // Get courses
+      const coursesResponse = await CourseService.getDoctorCourses();
       setCourses(coursesResponse.data);
     } catch (error: any) {
       toast({
@@ -103,6 +108,11 @@ const DoctorExams = () => {
     setIsEditDialogOpen(true);
   };
 
+  const handleAddQuestions = (examId: string) => {
+    setSelectedExamForQuestions(examId);
+    setIsAddQuestionDialogOpen(true);
+  };
+
   const updateExam = async (examId: string, examData: ExamFormData) => {
     try {
       await ExamService.updateExam(examId, {
@@ -147,12 +157,24 @@ const DoctorExams = () => {
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {exams.map((exam) => (
-            <ExamCard 
-              key={exam.id} 
-              exam={exam} 
-              onEdit={handleEditExam} 
-              onDelete={handleDeleteExam} 
-            />
+            <div key={exam.id} className="relative">
+              <ExamCard 
+                exam={exam} 
+                onEdit={handleEditExam} 
+                onDelete={handleDeleteExam} 
+              />
+              <div className="absolute top-2 right-12">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleAddQuestions(exam.id)}
+                  className="bg-white hover:bg-gray-50"
+                >
+                  <BookOpen className="mr-1 h-3 w-3" />
+                  Questions ({exam.questions?.length || 0})
+                </Button>
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -175,6 +197,13 @@ const DoctorExams = () => {
         loadingQuestions={false}
         onAddQuestion={() => {}}
         onRemoveQuestion={() => {}}
+      />
+
+      <AddExamQuestionDialog
+        isOpen={isAddQuestionDialogOpen}
+        onOpenChange={setIsAddQuestionDialogOpen}
+        examId={selectedExamForQuestions}
+        onQuestionsAdded={fetchData}
       />
     </div>
   );

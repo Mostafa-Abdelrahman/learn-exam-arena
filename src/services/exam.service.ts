@@ -1,6 +1,7 @@
 
 import ApiService from './api.service';
 import { dummyExamsComprehensive, dummyStudentResults } from '@/data/dummy-comprehensive';
+import { mockExams, STORAGE_KEYS, saveToStorage, getFromStorage, initializeMockData } from '@/data/exam-data';
 
 export interface ExamFilters {
   course_id?: string;
@@ -36,6 +37,10 @@ interface PaginationResponse<T> {
 }
 
 class ExamService {
+  constructor() {
+    initializeMockData();
+  }
+
   // Get all exams
   async getAllExams(params?: any): Promise<PaginationResponse<Exam[]>> {
     try {
@@ -46,10 +51,11 @@ class ExamService {
         pagination: response.meta?.pagination || this.getDefaultPagination(data.length)
       };
     } catch (error) {
-      console.warn('API getAllExams failed, using dummy data:', error);
+      console.warn('API getAllExams failed, using mock data:', error);
+      const mockData = getFromStorage(STORAGE_KEYS.EXAMS, mockExams);
       return {
-        data: dummyExamsComprehensive,
-        pagination: this.getDefaultPagination(dummyExamsComprehensive.length)
+        data: mockData,
+        pagination: this.getDefaultPagination(mockData.length)
       };
     }
   }
@@ -61,8 +67,9 @@ class ExamService {
       const responseData = response.data || response;
       return responseData || this.getDefaultExam(examId);
     } catch (error) {
-      console.warn('API getExam failed, using dummy data:', error);
-      return dummyExamsComprehensive.find(exam => exam.id === examId) || this.getDefaultExam(examId);
+      console.warn('API getExam failed, using mock data:', error);
+      const mockData = getFromStorage(STORAGE_KEYS.EXAMS, mockExams);
+      return mockData.find((exam: Exam) => exam.id === examId) || this.getDefaultExam(examId);
     }
   }
 
@@ -73,8 +80,9 @@ class ExamService {
       const responseData = response.data || response;
       return responseData || this.getDefaultExam(examId);
     } catch (error) {
-      console.warn('API getExamById failed, using dummy data:', error);
-      return dummyExamsComprehensive.find(exam => exam.id === examId) || this.getDefaultExam(examId);
+      console.warn('API getExamById failed, using mock data:', error);
+      const mockData = getFromStorage(STORAGE_KEYS.EXAMS, mockExams);
+      return mockData.find((exam: Exam) => exam.id === examId) || this.getDefaultExam(examId);
     }
   }
 
@@ -84,8 +92,9 @@ class ExamService {
       const response = await ApiService.get('/student/exams');
       return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
-      console.warn('API getStudentExams failed, using dummy data:', error);
-      return { data: dummyExamsComprehensive.filter(exam => exam.status === 'published') };
+      console.warn('API getStudentExams failed, using mock data:', error);
+      const mockData = getFromStorage(STORAGE_KEYS.EXAMS, mockExams);
+      return { data: mockData.filter((exam: Exam) => exam.status === 'published') };
     }
   }
 
@@ -95,8 +104,9 @@ class ExamService {
       const response = await ApiService.get(`/courses/${courseId}/exams`);
       return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
-      console.warn('API getCourseExams failed, using dummy data:', error);
-      const courseExams = dummyExamsComprehensive.filter(exam => exam.course_id === courseId);
+      console.warn('API getCourseExams failed, using mock data:', error);
+      const mockData = getFromStorage(STORAGE_KEYS.EXAMS, mockExams);
+      const courseExams = mockData.filter((exam: Exam) => exam.course_id === courseId);
       return { data: courseExams };
     }
   }
@@ -107,8 +117,9 @@ class ExamService {
       const response = await ApiService.get('/student/exams/upcoming');
       return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
-      console.warn('API getUpcomingExams failed, using dummy data:', error);
-      const upcomingExams = dummyExamsComprehensive.filter(exam => 
+      console.warn('API getUpcomingExams failed, using mock data:', error);
+      const mockData = getFromStorage(STORAGE_KEYS.EXAMS, mockExams);
+      const upcomingExams = mockData.filter((exam: Exam) => 
         new Date(exam.exam_date) > new Date() && exam.status === 'published'
       );
       return { data: upcomingExams };
@@ -121,8 +132,8 @@ class ExamService {
       const response = await ApiService.get('/student/results');
       return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
-      console.warn('API getStudentResults failed, using dummy data:', error);
-      return { data: dummyStudentResults };
+      console.warn('API getStudentResults failed, using mock data:', error);
+      return { data: getFromStorage(STORAGE_KEYS.EXAM_RESULTS, []) };
     }
   }
 
@@ -132,8 +143,9 @@ class ExamService {
       const response = await ApiService.get('/doctor/exams');
       return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
-      console.warn('API getDoctorExams failed, using dummy data:', error);
-      return { data: dummyExamsComprehensive };
+      console.warn('API getDoctorExams failed, using mock data:', error);
+      const mockData = getFromStorage(STORAGE_KEYS.EXAMS, mockExams);
+      return { data: mockData };
     }
   }
 
@@ -143,8 +155,9 @@ class ExamService {
       const response = await ApiService.get(`/exams/${examId}/questions`);
       return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
-      console.warn('API getExamQuestions failed, using dummy data:', error);
-      const exam = dummyExamsComprehensive.find(e => e.id === examId);
+      console.warn('API getExamQuestions failed, using mock data:', error);
+      const mockData = getFromStorage(STORAGE_KEYS.EXAMS, mockExams);
+      const exam = mockData.find((e: Exam) => e.id === examId);
       return { data: exam?.questions || [] };
     }
   }
@@ -157,13 +170,14 @@ class ExamService {
       const data = responseData || {};
       return {
         message: response.message || 'Exam started successfully',
-        session_id: data.session_id || `session-${Date.now()}`,
-        student_exam_id: data.student_exam_id,
-        questions: data.questions
+        session_id: (data as any).session_id || `session-${Date.now()}`,
+        student_exam_id: (data as any).student_exam_id,
+        questions: (data as any).questions
       };
     } catch (error) {
-      console.warn('API startExam failed, using dummy response:', error);
-      const exam = dummyExamsComprehensive.find(e => e.id === examId);
+      console.warn('API startExam failed, using mock response:', error);
+      const mockData = getFromStorage(STORAGE_KEYS.EXAMS, mockExams);
+      const exam = mockData.find((e: Exam) => e.id === examId);
       return { 
         message: 'Exam started successfully',
         session_id: `session-${Date.now()}`,
@@ -182,7 +196,12 @@ class ExamService {
       });
       return { message: response.message || 'Answer submitted successfully' };
     } catch (error) {
-      console.warn('API submitAnswer failed, using dummy response:', error);
+      console.warn('API submitAnswer failed, using local storage:', error);
+      // Save answer to local storage
+      const key = `${STORAGE_KEYS.EXAM_ANSWERS}${examId}`;
+      const existingAnswers = getFromStorage(key, {});
+      existingAnswers[questionId] = answer;
+      saveToStorage(key, existingAnswers);
       return { message: 'Answer submitted successfully' };
     }
   }
@@ -194,8 +213,9 @@ class ExamService {
       const responseData = response.data || response;
       return responseData || this.getDefaultExam(examId);
     } catch (error) {
-      console.warn('API takeExam failed, using dummy data:', error);
-      const exam = dummyExamsComprehensive.find(exam => exam.id === examId) || this.getDefaultExam(examId);
+      console.warn('API takeExam failed, using mock data:', error);
+      const mockData = getFromStorage(STORAGE_KEYS.EXAMS, mockExams);
+      const exam = mockData.find((exam: Exam) => exam.id === examId) || this.getDefaultExam(examId);
       return exam;
     }
   }
@@ -208,13 +228,47 @@ class ExamService {
       const data = responseData || {};
       return {
         message: response.message || 'Exam submitted successfully',
-        score: data.score
+        score: (data as any).score
       };
     } catch (error) {
-      console.warn('API submitExam failed, using dummy response:', error);
+      console.warn('API submitExam failed, using mock calculation:', error);
+      
+      // Calculate score based on mock data
+      const mockData = getFromStorage(STORAGE_KEYS.EXAMS, mockExams);
+      const exam = mockData.find((e: Exam) => e.id === examId);
+      let score = 0;
+      
+      if (exam && exam.questions) {
+        let totalQuestions = exam.questions.length;
+        let correctAnswers = 0;
+        
+        answers.forEach((answer: any) => {
+          const question = exam.questions?.find((q: any) => q.id === answer.questionId);
+          if (question && question.type === 'mcq' && question.choices) {
+            const correctChoice = question.choices.find((c: any) => c.is_correct);
+            if (correctChoice && correctChoice.id === answer.answer) {
+              correctAnswers++;
+            }
+          }
+        });
+        
+        score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+      }
+      
+      // Save result to local storage
+      const results = getFromStorage(STORAGE_KEYS.EXAM_RESULTS, []);
+      results.push({
+        id: `result-${Date.now()}`,
+        exam_id: examId,
+        score,
+        submitted_at: new Date().toISOString(),
+        answers
+      });
+      saveToStorage(STORAGE_KEYS.EXAM_RESULTS, results);
+      
       return {
         message: 'Exam submitted successfully',
-        score: Math.floor(Math.random() * 100)
+        score
       };
     }
   }
@@ -226,8 +280,14 @@ class ExamService {
       const responseData = response.data || response;
       return { exam: responseData || this.createDefaultExam(examData) };
     } catch (error) {
-      console.warn('API createExam failed, using dummy response:', error);
+      console.warn('API createExam failed, using mock creation:', error);
       const newExam = this.createDefaultExam(examData);
+      
+      // Save to local storage
+      const mockData = getFromStorage(STORAGE_KEYS.EXAMS, mockExams);
+      mockData.push(newExam);
+      saveToStorage(STORAGE_KEYS.EXAMS, mockData);
+      
       return { exam: newExam };
     }
   }
@@ -239,14 +299,21 @@ class ExamService {
       const responseData = response.data || response;
       return { exam: responseData || this.getDefaultExam(examId) };
     } catch (error) {
-      console.warn('API updateExam failed, using dummy response:', error);
-      const existingExam = dummyExamsComprehensive.find(e => e.id === examId) || this.getDefaultExam(examId);
-      const updatedExam = {
-        ...existingExam,
-        ...examData,
-        updated_at: new Date().toISOString()
-      };
-      return { exam: updatedExam };
+      console.warn('API updateExam failed, using mock update:', error);
+      const mockData = getFromStorage(STORAGE_KEYS.EXAMS, mockExams);
+      const examIndex = mockData.findIndex((e: Exam) => e.id === examId);
+      
+      if (examIndex !== -1) {
+        mockData[examIndex] = {
+          ...mockData[examIndex],
+          ...examData,
+          updated_at: new Date().toISOString()
+        };
+        saveToStorage(STORAGE_KEYS.EXAMS, mockData);
+        return { exam: mockData[examIndex] };
+      }
+      
+      return { exam: this.getDefaultExam(examId) };
     }
   }
 
@@ -256,7 +323,10 @@ class ExamService {
       const response = await ApiService.delete(`/doctor/exams/${examId}`);
       return { message: response.message || 'Exam deleted successfully' };
     } catch (error) {
-      console.warn('API deleteExam failed, using dummy response:', error);
+      console.warn('API deleteExam failed, using mock deletion:', error);
+      const mockData = getFromStorage(STORAGE_KEYS.EXAMS, mockExams);
+      const filteredData = mockData.filter((e: Exam) => e.id !== examId);
+      saveToStorage(STORAGE_KEYS.EXAMS, filteredData);
       return { message: 'Exam deleted successfully' };
     }
   }

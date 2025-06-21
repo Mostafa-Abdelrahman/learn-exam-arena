@@ -51,13 +51,18 @@ class StudentService {
     try {
       const response = await ApiService.put(`/student/${studentId}/profile`, profileData);
       const responseData = response.data || response;
+      
+      // Handle StandardApiResponse<unknown> type
+      const extractedData = responseData as any;
+      const student = extractedData?.student || {
+        id: studentId,
+        ...profileData,
+        updated_at: new Date().toISOString()
+      };
+      
       return {
         message: response.message || 'Profile updated successfully',
-        student: responseData?.student || {
-          id: studentId,
-          ...profileData,
-          updated_at: new Date().toISOString()
-        }
+        student
       };
     } catch (error) {
       console.warn('API updateStudentProfile failed, using dummy response:', error);

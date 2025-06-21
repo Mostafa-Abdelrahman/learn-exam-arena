@@ -20,27 +20,22 @@ import AdminCourses from "@/pages/admin/Courses";
 import AdminDoctors from "@/pages/admin/Doctors";
 import AdminStudents from "@/pages/admin/Students";
 import AdminStatistics from "@/pages/admin/Statistics";
-import AdminSettings from "@/pages/admin/Settings";
 
 // Doctor Pages
 import DoctorDashboard from "@/pages/doctor/Dashboard";
-import DoctorCourses from "@/pages/doctor/Courses";
-import DoctorQuestions from "@/pages/doctor/Questions";
 import DoctorExams from "@/pages/doctor/Exams";
-import DoctorGrading from "@/pages/doctor/Grading";
+import DoctorQuestions from "@/pages/doctor/Questions";
+import DoctorCourses from "@/pages/doctor/Courses";
 import DoctorStudents from "@/pages/doctor/Students";
-import DoctorReports from "@/pages/doctor/Reports";
-import DoctorSettings from "@/pages/doctor/Settings";
+import DoctorGrades from "@/pages/doctor/Grades";
 
 // Student Pages
 import StudentDashboard from "@/pages/student/Dashboard";
-import StudentCourses from "@/pages/student/Courses";
 import StudentExams from "@/pages/student/Exams";
-import StudentSchedule from "@/pages/student/Schedule";
-import StudentGrades from "@/pages/student/Grades";
+import StudentResults from "@/pages/student/Results";
+import StudentCourses from "@/pages/student/Courses";
 import StudentProfile from "@/pages/student/Profile";
-import StudentSettings from "@/pages/student/Settings";
-import ExamView from "@/pages/student/ExamView";
+import TakeExam from "@/pages/student/TakeExam";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,97 +46,141 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
-  <React.StrictMode>
+function App() {
+  return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <TooltipProvider>
         <AuthProvider>
-          <TooltipProvider>
+          <BrowserRouter>
+            <div className="min-h-screen bg-background">
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/login" element={<Login />} />
+                
+                {/* Protected Routes */}
+                <Route path="/" element={
+                  <ProtectedRoute>
+                    <DashboardLayout />
+                  </ProtectedRoute>
+                }>
+                  {/* Default redirect based on role */}
+                  <Route index element={<Navigate to="/dashboard" replace />} />
+                  
+                  {/* Admin Routes */}
+                  <Route path="admin/dashboard" element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="admin/majors" element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminMajors />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="admin/courses" element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminCourses />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="admin/doctors" element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminDoctors />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="admin/students" element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminStudents />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="admin/statistics" element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminStatistics />
+                    </ProtectedRoute>
+                  } />
+                  
+                  {/* Doctor Routes */}
+                  <Route path="doctor/dashboard" element={
+                    <ProtectedRoute allowedRoles={['doctor']}>
+                      <DoctorDashboard />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="doctor/exams" element={
+                    <ProtectedRoute allowedRoles={['doctor']}>
+                      <DoctorExams />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="doctor/questions" element={
+                    <ProtectedRoute allowedRoles={['doctor']}>
+                      <DoctorQuestions />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="doctor/courses" element={
+                    <ProtectedRoute allowedRoles={['doctor']}>
+                      <DoctorCourses />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="doctor/students" element={
+                    <ProtectedRoute allowedRoles={['doctor']}>
+                      <DoctorStudents />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="doctor/grades" element={
+                    <ProtectedRoute allowedRoles={['doctor']}>
+                      <DoctorGrades />
+                    </ProtectedRoute>
+                  } />
+                  
+                  {/* Student Routes */}
+                  <Route path="student/dashboard" element={
+                    <ProtectedRoute allowedRoles={['student']}>
+                      <StudentDashboard />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="student/exams" element={
+                    <ProtectedRoute allowedRoles={['student']}>
+                      <StudentExams />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="student/exams/:examId/take" element={
+                    <ProtectedRoute allowedRoles={['student']}>
+                      <TakeExam />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="student/results" element={
+                    <ProtectedRoute allowedRoles={['student']}>
+                      <StudentResults />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="student/courses" element={
+                    <ProtectedRoute allowedRoles={['student']}>
+                      <StudentCourses />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="student/profile" element={
+                    <ProtectedRoute allowedRoles={['student']}>
+                      <StudentProfile />
+                    </ProtectedRoute>
+                  } />
+                  
+                  {/* Role-based dashboard redirect */}
+                  <Route path="dashboard" element={
+                    <ProtectedRoute>
+                      <Navigate to="/admin/dashboard" replace />
+                    </ProtectedRoute>
+                  } />
+                </Route>
+                
+                {/* 404 Route */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </div>
             <Toaster />
             <Sonner />
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/login" element={<Login />} />
-              
-              {/* Redirect root to login */}
-              <Route path="/" element={<Navigate to="/login" replace />} />
-              
-              {/* Admin Routes */}
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <DashboardLayout role="admin" />
-                  </ProtectedRoute>
-                }
-              >
-                <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="majors" element={<AdminMajors />} />
-                <Route path="courses" element={<AdminCourses />} />
-                <Route path="doctors" element={<AdminDoctors />} />
-                <Route path="students" element={<AdminStudents />} />
-                <Route path="statistics" element={<AdminStatistics />} />
-                <Route path="settings" element={<AdminSettings />} />
-                <Route index element={<Navigate to="dashboard" replace />} />
-              </Route>
-              
-              {/* Doctor Routes */}
-              <Route
-                path="/doctor"
-                element={
-                  <ProtectedRoute allowedRoles={["doctor"]}>
-                    <DashboardLayout role="doctor" />
-                  </ProtectedRoute>
-                }
-              >
-                <Route path="dashboard" element={<DoctorDashboard />} />
-                <Route path="courses" element={<DoctorCourses />} />
-                <Route path="questions" element={<DoctorQuestions />} />
-                <Route path="exams" element={<DoctorExams />} />
-                <Route path="grading" element={<DoctorGrading />} />
-                <Route path="students" element={<DoctorStudents />} />
-                <Route path="reports" element={<DoctorReports />} />
-                <Route path="settings" element={<DoctorSettings />} />
-                <Route index element={<Navigate to="dashboard" replace />} />
-              </Route>
-              
-              {/* Student Routes */}
-              <Route
-                path="/student"
-                element={
-                  <ProtectedRoute allowedRoles={["student"]}>
-                    <DashboardLayout role="student" />
-                  </ProtectedRoute>
-                }
-              >
-                <Route path="dashboard" element={<StudentDashboard />} />
-                <Route path="courses" element={<StudentCourses />} />
-                <Route path="exams" element={<StudentExams />} />
-                <Route path="schedule" element={<StudentSchedule />} />
-                <Route path="grades" element={<StudentGrades />} />
-                <Route path="profile" element={<StudentProfile />} />
-                <Route path="settings" element={<StudentSettings />} />
-                <Route index element={<Navigate to="dashboard" replace />} />
-              </Route>
-              
-              {/* Special exam view page (full screen) */}
-              <Route
-                path="/student/exams/:examId/take"
-                element={
-                  <ProtectedRoute allowedRoles={["student"]}>
-                    <ExamView />
-                  </ProtectedRoute>
-                }
-              />
-              
-              {/* Not Found Route */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </TooltipProvider>
+          </BrowserRouter>
         </AuthProvider>
-      </BrowserRouter>
+      </TooltipProvider>
     </QueryClientProvider>
-  </React.StrictMode>
-);
+  );
+}
 
 export default App;

@@ -160,7 +160,7 @@ class QuestionService {
       const additionalData = courseId ? { course_id: courseId } : undefined;
       const response = await ApiService.upload('/doctor/questions/import', file, additionalData);
       const responseData = response.data || response;
-      const data = responseData || {};
+      const data = responseData as any || {};
       return { 
         imported: data.imported || 0, 
         errors: data.errors || [] 
@@ -200,7 +200,7 @@ class QuestionService {
     try {
       const response = await ApiService.post('/doctor/questions/bulk/delete', { question_ids: questionIds });
       const responseData = response.data || response;
-      const data = responseData || {};
+      const data = responseData as any || {};
       return { 
         deleted: data.deleted || 0, 
         errors: data.errors || [] 
@@ -215,7 +215,7 @@ class QuestionService {
     try {
       const response = await ApiService.put('/doctor/questions/bulk', { question_ids: questionIds, updates });
       const responseData = response.data || response;
-      const data = responseData || {};
+      const data = responseData as any || {};
       return { 
         updated: data.updated || 0, 
         errors: data.errors || [] 
@@ -253,7 +253,7 @@ class QuestionService {
     try {
       const response = await ApiService.post('/doctor/questions/validate', questionData);
       const responseData = response.data || response;
-      const data = responseData || {};
+      const data = responseData as any || {};
       return { 
         valid: data.valid || false, 
         errors: data.errors || [] 
@@ -292,10 +292,12 @@ class QuestionService {
   private createDefaultQuestion(questionData?: Partial<CreateQuestionData>): Question {
     return {
       id: `question-${Date.now()}`,
-      text: questionData?.text || '',
+      text: questionData?.text || 'Default Question',
       type: questionData?.type || 'mcq',
-      created_by: '',
-      difficulty: questionData?.difficulty || 'easy'
+      created_by: questionData?.created_by || 'default',
+      difficulty: questionData?.difficulty || 'easy',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
   }
 

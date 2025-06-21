@@ -1,241 +1,176 @@
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import {
-  Loader2,
-  Search,
-  Trophy,
-  Calendar,
-  BookOpen,
-  TrendingUp,
-} from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import ExamService from "@/services/exam.service";
+import { Calendar, Trophy, FileText, Clock } from "lucide-react";
+import { getFromStorage, STORAGE_KEYS } from "@/data/exam-data";
 
 interface ExamResult {
+  id: string;
   exam_id: string;
-  exam_name: string;
-  course_name: string;
   score: number;
-  status: "completed" | "graded";
   submitted_at: string;
+  answers: any[];
 }
 
 const StudentResults = () => {
-  const { currentUser } = useAuth();
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
   const [results, setResults] = useState<ExamResult[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [exams, setExams] = useState<Exam[]>([]);
 
   useEffect(() => {
-    if (currentUser) {
-      fetchResults();
-    }
-  }, [currentUser]);
+    loadResults();
+  }, []);
 
-  const fetchResults = async () => {
-    if (!currentUser) return;
-
-    try {
-      setIsLoading(true);
-      const response = await ExamService.getStudentResults();
-      
-      if (response && response.data) {
-        // Map the response data to match our interface
-        const mappedResults: ExamResult[] = response.data.map((result: any) => ({
-          exam_id: result.exam_id || result.id,
-          exam_name: result.exam_name || result.exam?.name || 'Unknown Exam',
-          course_name: result.course_name || result.exam?.course?.name || 'Unknown Course',
-          score: result.score || 0,
-          status: result.status || 'completed',
-          submitted_at: result.submitted_at || new Date().toISOString(),
-        }));
-        setResults(mappedResults);
-      }
-    } catch (error: any) {
-      console.error("Error fetching results:", error);
-      toast({
-        title: "Error fetching results",
-        description: error.message || "Could not load your exam results. Please try again later.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const loadResults = () => {
+    const examResults = getFromStorage(STORAGE_KEYS.EXAM_RESULTS, []);
+    const examData = getFromStorage(STORAGE_KEYS.EXAMS, []);
+    setResults(examResults);
+    setExams(examData);
   };
 
-  const filteredResults = results.filter(result =>
-    result.exam_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    result.course_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const getExamDetails = (examId: string) => {
+    return exams.find(exam => exam.id === examId);
+  };
 
-  const averageScore = results.length > 0 
-    ? Math.round(results.reduce((sum, result) => sum + result.score, 0) / results.length)
-    : 0;
+  const getGradeColor = (score: number) => {
+    if (score >= 90) return "text-green-600";
+    if (score >= 80) return "text-blue-600";
+    if (score >= 70) return "text-yellow-600";
+    if (score >= 60) return "text-orange-600";
+    return "text-red-600";
+  };
 
-  const completedExams = results.filter(result => result.status === "completed").length;
-  const gradedExams = results.filter(result => result.status === "graded").length;
-
-  const getScoreBadgeVariant = (score: number) => {
-    if (score >= 90) return "default";
-    if (score >= 80) return "secondary";
-    if (score >= 70) return "outline";
-    return "destructive";
+  const getGradeBadge = (score: number) => {
+    if (score >= 90) return { label: "Excellent", variant: "default" as const };
+    if (score >= 80) return { label: "Good", variant: "secondary" as const };
+    if (score >= 70) return { label: "Average", variant: "outline" as const };
+    if (score >= 60) return { label: "Fair", variant: "outline" as const };
+    return { label: "Needs Improvement", variant: "destructive" as const };
   };
 
   return (
     <div className="space-y-6 animate-in">
       <div className="flex flex-col justify-between space-y-2 md:flex-row md:items-center md:space-y-0">
-        <h2 className="text-3xl font-bold tracking-tight">My Results</h2>
-        <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search results..."
-            className="pl-8 w-[250px]"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+        <h2 className="text-3xl font-bold tracking-tight">Exam Results</h2>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {results.length === 0 ? (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Average Score</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{averageScore}%</div>
-            <p className="text-xs text-muted-foreground">
-              Across all exams
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Exams</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{results.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Exams taken
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{completedExams}</div>
-            <p className="text-xs text-muted-foreground">
-              Awaiting grades
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Graded</CardTitle>
-            <Trophy className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{gradedExams}</div>
-            <p className="text-xs text-muted-foreground">
-              Results available
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {isLoading ? (
-        <div className="flex justify-center py-10">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : filteredResults.length === 0 ? (
-        <Card>
-          <CardContent className="p-10 text-center">
-            <Trophy className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">
-              No results found
-            </h3>
-            <p className="text-muted-foreground">
-              {searchTerm
-                ? "No results match your search."
-                : "You haven't taken any exams yet."}
+          <CardContent className="p-6">
+            <p className="text-center text-muted-foreground">
+              No exam results available yet. Take some exams to see your results here.
             </p>
           </CardContent>
         </Card>
       ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {results.map((result) => {
+            const exam = getExamDetails(result.exam_id);
+            const gradeBadge = getGradeBadge(result.score);
+            
+            if (!exam) return null;
+
+            return (
+              <Card key={result.id} className="hover:shadow-md transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="text-lg line-clamp-2">{exam.name}</CardTitle>
+                    <Badge variant={gradeBadge.variant}>
+                      {gradeBadge.label}
+                    </Badge>
+                  </div>
+                  {exam.course && (
+                    <p className="text-sm text-muted-foreground">
+                      {exam.course.name} ({exam.course.code})
+                    </p>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Score Display */}
+                  <div className="text-center py-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-center space-x-2">
+                      <Trophy className={`h-6 w-6 ${getGradeColor(result.score)}`} />
+                      <span className={`text-3xl font-bold ${getGradeColor(result.score)}`}>
+                        {result.score}%
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">Final Score</p>
+                  </div>
+
+                  {/* Exam Details */}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span>{new Date(result.submitted_at).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span>{new Date(result.submitted_at).toLocaleTimeString()}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span>{result.answers.length} answered</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Trophy className="h-4 w-4 text-muted-foreground" />
+                      <span>{exam.total_marks || 100} total marks</span>
+                    </div>
+                  </div>
+
+                  {/* Performance Summary */}
+                  <div className="pt-2 border-t">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Questions Answered:</span>
+                      <span className="font-medium">
+                        {result.answers.length} / {exam.questions?.length || 0}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm mt-1">
+                      <span className="text-muted-foreground">Status:</span>
+                      <span className={`font-medium ${result.score >= 60 ? 'text-green-600' : 'text-red-600'}`}>
+                        {result.score >= 60 ? 'Passed' : 'Failed'}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Overall Statistics */}
+      {results.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Exam Results</CardTitle>
-            <CardDescription>
-              Your performance across all completed exams
-            </CardDescription>
+            <CardTitle>Overall Performance</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="w-full relative overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Exam</TableHead>
-                    <TableHead>Course</TableHead>
-                    <TableHead>Score</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date Submitted</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredResults.map((result) => (
-                    <TableRow key={result.exam_id}>
-                      <TableCell className="font-medium">
-                        {result.exam_name}
-                      </TableCell>
-                      <TableCell>{result.course_name}</TableCell>
-                      <TableCell>
-                        <Badge variant={getScoreBadgeVariant(result.score)}>
-                          {result.score}%
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={result.status === "graded" ? "default" : "secondary"}
-                        >
-                          {result.status === "graded" ? "Graded" : "Pending"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(result.submitted_at), "PPP")}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary">
+                  {results.length}
+                </div>
+                <p className="text-sm text-muted-foreground">Exams Taken</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {Math.round(results.reduce((acc, result) => acc + result.score, 0) / results.length)}%
+                </div>
+                <p className="text-sm text-muted-foreground">Average Score</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {Math.max(...results.map(r => r.score))}%
+                </div>
+                <p className="text-sm text-muted-foreground">Best Score</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">
+                  {results.filter(r => r.score >= 60).length}
+                </div>
+                <p className="text-sm text-muted-foreground">Passed Exams</p>
+              </div>
             </div>
           </CardContent>
         </Card>
