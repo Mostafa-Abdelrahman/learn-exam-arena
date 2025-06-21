@@ -290,7 +290,7 @@ class QuestionService {
     };
   }
 
-  private createDefaultQuestion(questionData?: Partial<CreateQuestionData>): Question {
+  private createDefaultQuestion(questionData?: Partial<CreateQuestionData | UpdateQuestionData>): Question {
     return {
       id: `question-${Date.now()}`,
       text: questionData?.text || 'Default Question',
