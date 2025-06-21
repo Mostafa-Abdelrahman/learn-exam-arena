@@ -5,9 +5,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 // Auth Pages
 import Login from "@/pages/Login";
@@ -47,6 +47,21 @@ const queryClient = new QueryClient({
   },
 });
 
+// Role-based redirect component
+const RoleBasedRedirect = () => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  
+  if (user?.role === 'admin') {
+    return <Navigate to="/admin/dashboard" replace />;
+  } else if (user?.role === 'doctor') {
+    return <Navigate to="/doctor/dashboard" replace />;
+  } else if (user?.role === 'student') {
+    return <Navigate to="/student/dashboard" replace />;
+  }
+  
+  return <Navigate to="/login" replace />;
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -58,15 +73,16 @@ function App() {
                 {/* Public Routes */}
                 <Route path="/login" element={<Login />} />
                 
-                {/* Protected Routes */}
+                {/* Root redirect */}
+                <Route path="/" element={<RoleBasedRedirect />} />
+                <Route path="/dashboard" element={<RoleBasedRedirect />} />
+                
+                {/* Protected Routes with Layout */}
                 <Route path="/" element={
                   <ProtectedRoute>
                     <DashboardLayout />
                   </ProtectedRoute>
                 }>
-                  {/* Default redirect based on role */}
-                  <Route index element={<Navigate to="/dashboard" replace />} />
-                  
                   {/* Admin Routes */}
                   <Route path="admin/dashboard" element={
                     <ProtectedRoute allowedRoles={['admin']}>
@@ -165,13 +181,6 @@ function App() {
                   <Route path="student/profile" element={
                     <ProtectedRoute allowedRoles={['student']}>
                       <StudentProfile />
-                    </ProtectedRoute>
-                  } />
-                  
-                  {/* Role-based dashboard redirect */}
-                  <Route path="dashboard" element={
-                    <ProtectedRoute>
-                      <Navigate to="/admin/dashboard" replace />
                     </ProtectedRoute>
                   } />
                 </Route>

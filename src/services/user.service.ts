@@ -1,4 +1,3 @@
-
 import LocalStorageService from './local-storage.service';
 import { User, CreateUserData, UpdateUserData } from '@/types/user';
 
@@ -47,6 +46,14 @@ class UserService {
     }
 
     return { data: users };
+  }
+
+  // Get doctors specifically
+  async getDoctors(): Promise<{ data: User[] }> {
+    LocalStorageService.initializeData();
+    const users = LocalStorageService.getUsers();
+    const doctors = users.filter(user => user.role === 'doctor');
+    return { data: doctors };
   }
 
   // Get user statistics
