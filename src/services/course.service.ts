@@ -48,7 +48,7 @@ class CourseService {
       const user = await AuthService.getCurrentUser();
       const endpoint = user?.role === 'admin' ? '/admin/courses' : '/courses';
       const response = await ApiService.get(endpoint);
-      return { data: response.data || [] };
+      return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
       console.warn('API getAllCourses failed, using dummy data:', error);
       return { data: dummyCourses };
@@ -58,7 +58,7 @@ class CourseService {
   async getCourseById(courseId: string): Promise<{ data: Course }> {
     try {
       const response = await ApiService.get(`/admin/courses/${courseId}`);
-      return { data: response.data };
+      return { data: response.data || dummyCourses[0] };
     } catch (error) {
       console.warn('API getCourseById failed, using dummy data:', error);
       const course = dummyCourses.find(c => c.id === courseId) || dummyCourses[0];
@@ -70,18 +70,12 @@ class CourseService {
     try {
       const response = await ApiService.post('/admin/courses', courseData);
       return { 
-        data: response.data, 
+        data: response.data || this.createDefaultCourse(courseData),
         message: response.message || 'Course created successfully' 
       };
     } catch (error) {
       console.warn('API createCourse failed, using dummy response:', error);
-      const newCourse: Course = {
-        id: `course-${Date.now()}`,
-        ...courseData,
-        status: courseData.status || 'active',
-        student_count: 0,
-        created_at: new Date().toISOString()
-      };
+      const newCourse = this.createDefaultCourse(courseData);
       return { data: newCourse, message: 'Course created successfully' };
     }
   }
@@ -90,7 +84,7 @@ class CourseService {
     try {
       const response = await ApiService.put(`/admin/courses/${courseId}`, courseData);
       return { 
-        data: response.data, 
+        data: response.data || this.createDefaultCourse(courseData as CreateCourseData),
         message: response.message || 'Course updated successfully' 
       };
     } catch (error) {
@@ -119,7 +113,7 @@ class CourseService {
   async getStudentCourses(): Promise<{ data: any[] }> {
     try {
       const response = await ApiService.get('/student/courses');
-      return { data: response.data || [] };
+      return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
       console.warn('API getStudentCourses failed, using dummy data:', error);
       return { data: [] };
@@ -140,11 +134,28 @@ class CourseService {
   async getDoctorCourses(): Promise<{ data: Course[] }> {
     try {
       const response = await ApiService.get('/doctor/courses');
-      return { data: response.data || [] };
+      return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
       console.warn('API getDoctorCourses failed, using dummy data:', error);
       return { data: dummyCourses };
     }
+  }
+
+  private createDefaultCourse(courseData: Partial<CreateCourseData>): Course {
+    return {
+      id: `course-${Date.now()}`,
+      name: courseData.name || '',
+      code: courseData.code || '',
+      description: courseData.description,
+      credits: courseData.credits || 0,
+      semester: courseData.semester || '',
+      major_id: courseData.major_id || '',
+      doctor_id: courseData.doctor_id,
+      status: courseData.status || 'active',
+      academic_year: courseData.academic_year || '',
+      student_count: 0,
+      created_at: new Date().toISOString()
+    };
   }
 }
 

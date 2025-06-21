@@ -7,7 +7,7 @@ class NotificationService {
   async getUserNotifications(params?: any): Promise<{ data: any[] }> {
     try {
       const response = await ApiService.get('/notifications', params);
-      return { data: response.data || [] };
+      return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
       console.warn('API getUserNotifications failed, using dummy data:', error);
       const limit = params?.limit || dummyNotifications.length;
@@ -19,7 +19,8 @@ class NotificationService {
   async getUnreadCount(): Promise<{ count: number }> {
     try {
       const response = await ApiService.get('/notifications/unread-count');
-      return { count: response.data?.count || 0 };
+      const data = response.data || {};
+      return { count: data.count || 0 };
     } catch (error) {
       console.warn('API getUnreadCount failed, using dummy data:', error);
       return dummyUnreadCount;

@@ -59,24 +59,17 @@ class DoctorService {
   async getDoctorStats(doctorId: string): Promise<{ data: DoctorStats }> {
     try {
       const response = await ApiService.get(`/doctor/${doctorId}/stats`);
-      return { data: response.data };
+      return { data: response.data || this.getDefaultStats() };
     } catch (error) {
       console.warn('API getDoctorStats failed, using dummy data:', error);
-      return {
-        data: {
-          total_courses: 3,
-          total_exams: 5,
-          total_students: 45,
-          pending_grades: 2
-        }
-      };
+      return { data: this.getDefaultStats() };
     }
   }
 
   async getExams(doctorId: string): Promise<{ data: Exam[] }> {
     try {
       const response = await ApiService.get(`/doctor/${doctorId}/exams`);
-      return { data: response.data || [] };
+      return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
       console.warn('API getExams failed, using dummy data:', error);
       return { data: [] };
@@ -86,7 +79,7 @@ class DoctorService {
   async getCourses(doctorId: string): Promise<{ data: Course[] }> {
     try {
       const response = await ApiService.get(`/doctor/${doctorId}/courses`);
-      return { data: response.data || [] };
+      return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
       console.warn('API getCourses failed, using dummy data:', error);
       return { data: [] };
@@ -96,7 +89,7 @@ class DoctorService {
   async getStudents(doctorId: string): Promise<{ data: User[] }> {
     try {
       const response = await ApiService.get(`/doctor/${doctorId}/students`);
-      return { data: response.data || [] };
+      return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
       console.warn('API getStudents failed, using dummy data:', error);
       return { data: [] };
@@ -106,7 +99,7 @@ class DoctorService {
   async getQuestions(doctorId: string): Promise<{ data: Question[] }> {
     try {
       const response = await ApiService.get(`/doctor/${doctorId}/questions`);
-      return { data: response.data || [] };
+      return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
       console.warn('API getQuestions failed, using dummy data:', error);
       return { data: dummyQuestions };
@@ -116,7 +109,7 @@ class DoctorService {
   async getQuestionChoices(questionId: string): Promise<{ data: Choice[] }> {
     try {
       const response = await ApiService.get(`/doctor/questions/${questionId}/choices`);
-      return { data: response.data || [] };
+      return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
       console.warn('API getQuestionChoices failed, using dummy data:', error);
       return { data: dummyChoices.filter(c => c.question_id === questionId) };
@@ -127,17 +120,12 @@ class DoctorService {
     try {
       const response = await ApiService.post('/doctor/questions', questionData);
       return { 
-        data: response.data, 
+        data: response.data || this.createDefaultQuestion(questionData),
         message: response.message || 'Question created successfully' 
       };
     } catch (error) {
       console.warn('API createQuestion failed, using dummy data:', error);
-      const dummyQuestion = {
-        id: Math.random().toString(36).substr(2, 9),
-        ...questionData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      const dummyQuestion = this.createDefaultQuestion(questionData);
       return {
         data: dummyQuestion,
         message: 'Question created successfully (dummy data)'
@@ -149,7 +137,7 @@ class DoctorService {
     try {
       const response = await ApiService.put(`/doctor/questions/${questionId}`, questionData);
       return {
-        data: response.data,
+        data: response.data || this.createDefaultQuestion(questionData as CreateQuestionData),
         message: response.message || 'Question updated successfully'
       };
     } catch (error) {
@@ -181,16 +169,12 @@ class DoctorService {
     try {
       const response = await ApiService.post(`/doctor/questions/${questionId}/choices`, choiceData);
       return {
-        data: response.data,
+        data: response.data || this.createDefaultChoice(questionId, choiceData),
         message: response.message || 'Choice created successfully'
       };
     } catch (error) {
       console.warn('API createChoice failed, using dummy data:', error);
-      const dummyChoice = {
-        id: Math.random().toString(36).substr(2, 9),
-        question_id: questionId,
-        ...choiceData
-      };
+      const dummyChoice = this.createDefaultChoice(questionId, choiceData);
       return {
         data: dummyChoice,
         message: 'Choice created successfully (dummy data)'
@@ -201,7 +185,7 @@ class DoctorService {
   async updateChoice(choiceId: string, choiceData: UpdateChoiceData): Promise<{ data: Choice }> {
     try {
       const response = await ApiService.put(`/doctor/choices/${choiceId}`, choiceData);
-      return { data: response.data };
+      return { data: response.data || this.createDefaultChoice('', choiceData) };
     } catch (error) {
       console.warn('API updateChoice failed, using dummy response:', error);
       const existingChoice = dummyChoices.find(c => c.id === choiceId) || dummyChoices[0];
@@ -211,6 +195,38 @@ class DoctorService {
       };
       return { data: updatedChoice };
     }
+  }
+
+  private getDefaultStats(): DoctorStats {
+    return {
+      total_courses: 3,
+      total_exams: 5,
+      total_students: 45,
+      pending_grades: 2
+    };
+  }
+
+  private createDefaultQuestion(questionData: Partial<CreateQuestionData>): Question {
+    return {
+      id: Math.random().toString(36).substr(2, 9),
+      text: questionData.text || '',
+      type: questionData.type || 'mcq',
+      difficulty: questionData.difficulty || 'easy',
+      chapter: questionData.chapter,
+      evaluation_criteria: questionData.evaluation_criteria,
+      created_by: questionData.created_by || '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+  }
+
+  private createDefaultChoice(questionId: string, choiceData: Partial<CreateChoiceData>): Choice {
+    return {
+      id: Math.random().toString(36).substr(2, 9),
+      question_id: questionId,
+      text: choiceData.text || '',
+      is_correct: choiceData.is_correct || false
+    };
   }
 }
 

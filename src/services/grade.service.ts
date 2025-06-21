@@ -35,7 +35,7 @@ class GradeService {
   async getGrades(): Promise<{ data: Grade[] }> {
     try {
       const response = await ApiService.get('/doctor/grades');
-      return { data: response.data || [] };
+      return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
       console.warn('API getGrades failed:', error);
       return { data: [] };
@@ -55,7 +55,7 @@ class GradeService {
   async getExamSubmissions(examId: string): Promise<{ data: ExamSubmission[] }> {
     try {
       const response = await ApiService.get(`/doctor/exams/${examId}/submissions`);
-      return { data: response.data || [] };
+      return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
       console.warn('API getExamSubmissions failed:', error);
       return { data: [] };

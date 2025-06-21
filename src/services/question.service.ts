@@ -73,18 +73,13 @@ class QuestionService {
       const data = Array.isArray(response.data) ? response.data : [];
       return {
         data,
-        pagination: response.meta?.pagination || {
-          current_page: 1,
-          total_pages: 1,
-          total_count: data.length,
-          per_page: 25
-        }
+        pagination: response.meta?.pagination || this.getDefaultPagination(data.length)
       };
     } catch (error) {
       console.warn('API getAllQuestions failed:', error);
       return {
         data: [],
-        pagination: { current_page: 1, total_pages: 1, total_count: 0, per_page: 25 }
+        pagination: this.getDefaultPagination(0)
       };
     }
   }
@@ -92,78 +87,36 @@ class QuestionService {
   async getQuestionById(questionId: string): Promise<{ data: Question }> {
     try {
       const response = await ApiService.get(`/questions/${questionId}`);
-      const defaultQuestion: Question = {
-        id: questionId,
-        text: '',
-        type: 'mcq',
-        created_by: '',
-        difficulty: 'easy'
-      };
-      return { data: response.data || defaultQuestion };
+      return { data: response.data || this.createDefaultQuestion() };
     } catch (error) {
       console.warn('API getQuestionById failed:', error);
-      const defaultQuestion: Question = {
-        id: questionId,
-        text: '',
-        type: 'mcq',
-        created_by: '',
-        difficulty: 'easy'
-      };
-      return { data: defaultQuestion };
+      return { data: this.createDefaultQuestion() };
     }
   }
 
   async createQuestion(questionData: CreateQuestionData): Promise<{ question: Question; message: string }> {
     try {
       const response = await ApiService.post('/doctor/questions', questionData);
-      const defaultQuestion: Question = {
-        id: `question-${Date.now()}`,
-        text: questionData.text,
-        type: questionData.type,
-        created_by: '',
-        difficulty: questionData.difficulty || 'easy'
-      };
       return { 
-        question: response.data || defaultQuestion, 
+        question: response.data || this.createDefaultQuestion(questionData), 
         message: response.message || 'Question created successfully' 
       };
     } catch (error) {
       console.warn('API createQuestion failed:', error);
-      const defaultQuestion: Question = {
-        id: `question-${Date.now()}`,
-        text: questionData.text,
-        type: questionData.type,
-        created_by: '',
-        difficulty: questionData.difficulty || 'easy'
-      };
-      return { question: defaultQuestion, message: 'Question created successfully' };
+      return { question: this.createDefaultQuestion(questionData), message: 'Question created successfully' };
     }
   }
 
   async updateQuestion(questionId: string, questionData: UpdateQuestionData): Promise<{ question: Question; message: string }> {
     try {
       const response = await ApiService.put(`/doctor/questions/${questionId}`, questionData);
-      const defaultQuestion: Question = {
-        id: questionId,
-        text: questionData.text || '',
-        type: questionData.type || 'mcq',
-        created_by: '',
-        difficulty: questionData.difficulty || 'easy'
-      };
       return { 
-        question: response.data || defaultQuestion, 
+        question: response.data || this.createDefaultQuestion(questionData), 
         message: response.message || 'Question updated successfully' 
       };
     } catch (error) {
       console.warn('API updateQuestion failed:', error);
-      const defaultQuestion: Question = {
-        id: questionId,
-        text: questionData.text || '',
-        type: questionData.type || 'mcq',
-        created_by: '',
-        difficulty: questionData.difficulty || 'easy'
-      };
-      return { question: defaultQuestion, message: 'Question updated successfully' };
+      return { question: this.createDefaultQuestion(questionData), message: 'Question updated successfully' };
     }
   }
 
@@ -181,7 +134,7 @@ class QuestionService {
   async getCourseQuestions(courseId: string): Promise<{ data: Question[] }> {
     try {
       const response = await ApiService.get(`/courses/${courseId}/questions`);
-      return { data: response.data || [] };
+      return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
       console.warn('API getCourseQuestions failed:', error);
       return { data: [] };
@@ -192,7 +145,7 @@ class QuestionService {
     try {
       const endpoint = doctorId ? `/doctors/${doctorId}/questions` : '/doctor/questions';
       const response = await ApiService.get(endpoint);
-      return { data: response.data || [] };
+      return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
       console.warn('API getDoctorQuestions failed:', error);
       return { data: [] };
@@ -204,9 +157,10 @@ class QuestionService {
     try {
       const additionalData = courseId ? { course_id: courseId } : undefined;
       const response = await ApiService.upload('/doctor/questions/import', file, additionalData);
+      const data = response.data || {};
       return { 
-        imported: response.data?.imported || 0, 
-        errors: response.data?.errors || [] 
+        imported: data.imported || 0, 
+        errors: data.errors || [] 
       };
     } catch (error) {
       console.warn('API importQuestions failed:', error);
@@ -227,27 +181,13 @@ class QuestionService {
   async duplicateQuestion(questionId: string, newCourseId?: string): Promise<{ question: Question; message: string }> {
     try {
       const response = await ApiService.post(`/doctor/questions/${questionId}/duplicate`, { course_id: newCourseId });
-      const defaultQuestion: Question = {
-        id: `question-${Date.now()}`,
-        text: '',
-        type: 'mcq',
-        created_by: '',
-        difficulty: 'easy'
-      };
       return { 
-        question: response.data || defaultQuestion, 
+        question: response.data || this.createDefaultQuestion(), 
         message: response.message || 'Question duplicated successfully' 
       };
     } catch (error) {
       console.warn('API duplicateQuestion failed:', error);
-      const defaultQuestion: Question = {
-        id: `question-${Date.now()}`,
-        text: '',
-        type: 'mcq',
-        created_by: '',
-        difficulty: 'easy'
-      };
-      return { question: defaultQuestion, message: 'Question duplicated successfully' };
+      return { question: this.createDefaultQuestion(), message: 'Question duplicated successfully' };
     }
   }
 
@@ -255,9 +195,10 @@ class QuestionService {
   async bulkDeleteQuestions(questionIds: string[]): Promise<{ deleted: number; errors: any[] }> {
     try {
       const response = await ApiService.post('/doctor/questions/bulk/delete', { question_ids: questionIds });
+      const data = response.data || {};
       return { 
-        deleted: response.data?.deleted || 0, 
-        errors: response.data?.errors || [] 
+        deleted: data.deleted || 0, 
+        errors: data.errors || [] 
       };
     } catch (error) {
       console.warn('API bulkDeleteQuestions failed:', error);
@@ -268,9 +209,10 @@ class QuestionService {
   async bulkUpdateQuestions(questionIds: string[], updates: Partial<UpdateQuestionData>): Promise<{ updated: number; errors: any[] }> {
     try {
       const response = await ApiService.put('/doctor/questions/bulk', { question_ids: questionIds, updates });
+      const data = response.data || {};
       return { 
-        updated: response.data?.updated || 0, 
-        errors: response.data?.errors || [] 
+        updated: data.updated || 0, 
+        errors: data.errors || [] 
       };
     } catch (error) {
       console.warn('API bulkUpdateQuestions failed:', error);
@@ -282,22 +224,10 @@ class QuestionService {
   async getQuestionStats(): Promise<{ data: QuestionStats }> {
     try {
       const response = await ApiService.get('/admin/questions/stats');
-      const defaultStats: QuestionStats = {
-        total_questions: 0,
-        questions_by_type: { mcq: 0, written: 0, multiple_choice: 0 },
-        questions_by_difficulty: { easy: 0, medium: 0, hard: 0 },
-        questions_by_course: []
-      };
-      return { data: response.data || defaultStats };
+      return { data: response.data || this.getDefaultStats() };
     } catch (error) {
       console.warn('API getQuestionStats failed:', error);
-      const defaultStats: QuestionStats = {
-        total_questions: 0,
-        questions_by_type: { mcq: 0, written: 0, multiple_choice: 0 },
-        questions_by_difficulty: { easy: 0, medium: 0, hard: 0 },
-        questions_by_course: []
-      };
-      return { data: defaultStats };
+      return { data: this.getDefaultStats() };
     }
   }
 
@@ -315,9 +245,10 @@ class QuestionService {
   async validateQuestion(questionData: CreateQuestionData | UpdateQuestionData): Promise<{ valid: boolean; errors: string[] }> {
     try {
       const response = await ApiService.post('/doctor/questions/validate', questionData);
+      const data = response.data || {};
       return { 
-        valid: response.data?.valid || false, 
-        errors: response.data?.errors || [] 
+        valid: data.valid || false, 
+        errors: data.errors || [] 
       };
     } catch (error) {
       console.warn('API validateQuestion failed:', error);
@@ -334,11 +265,39 @@ class QuestionService {
   }): Promise<{ data: Question[] }> {
     try {
       const response = await ApiService.get('/questions/random', filters);
-      return { data: response.data || [] };
+      return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
       console.warn('API getRandomQuestions failed:', error);
       return { data: [] };
     }
+  }
+
+  private getDefaultPagination(totalCount: number) {
+    return {
+      current_page: 1,
+      total_pages: 1,
+      total_count: totalCount,
+      per_page: 25
+    };
+  }
+
+  private createDefaultQuestion(questionData?: Partial<CreateQuestionData>): Question {
+    return {
+      id: `question-${Date.now()}`,
+      text: questionData?.text || '',
+      type: questionData?.type || 'mcq',
+      created_by: '',
+      difficulty: questionData?.difficulty || 'easy'
+    };
+  }
+
+  private getDefaultStats(): QuestionStats {
+    return {
+      total_questions: 0,
+      questions_by_type: { mcq: 0, written: 0, multiple_choice: 0 },
+      questions_by_difficulty: { easy: 0, medium: 0, hard: 0 },
+      questions_by_course: []
+    };
   }
 }
 
