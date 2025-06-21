@@ -40,12 +40,13 @@ class ExamService {
   async getAllExams(params?: any): Promise<PaginationResponse<Exam[]>> {
     try {
       const response = await ApiService.get('/exams', params);
+      const data = Array.isArray(response.data) ? response.data : [];
       return {
-        data: response.data,
+        data,
         pagination: response.meta?.pagination || {
           current_page: 1,
           total_pages: 1,
-          total_count: response.data?.length || 0,
+          total_count: data.length,
           per_page: 25,
           has_next: false,
           has_prev: false
@@ -71,7 +72,7 @@ class ExamService {
   async getExam(examId: string): Promise<Exam> {
     try {
       const response = await ApiService.get(`/exams/${examId}`);
-      return response.data;
+      return response.data || dummyExamsComprehensive[0];
     } catch (error) {
       console.warn('API getExam failed, using dummy data:', error);
       return dummyExamsComprehensive.find(exam => exam.id === examId) || dummyExamsComprehensive[0];
@@ -82,7 +83,7 @@ class ExamService {
   async getExamById(examId: string): Promise<Exam> {
     try {
       const response = await ApiService.get(`/exams/${examId}`);
-      return response.data;
+      return response.data || dummyExamsComprehensive[0];
     } catch (error) {
       console.warn('API getExamById failed, using dummy data:', error);
       return dummyExamsComprehensive.find(exam => exam.id === examId) || dummyExamsComprehensive[0];
@@ -93,7 +94,7 @@ class ExamService {
   async getStudentExams(): Promise<{ data: Exam[] }> {
     try {
       const response = await ApiService.get('/student/exams');
-      return { data: response.data };
+      return { data: response.data || [] };
     } catch (error) {
       console.warn('API getStudentExams failed, using dummy data:', error);
       return { data: dummyExamsComprehensive.filter(exam => exam.status === 'published') };
@@ -104,7 +105,7 @@ class ExamService {
   async getCourseExams(courseId: string): Promise<{ data: Exam[] }> {
     try {
       const response = await ApiService.get(`/courses/${courseId}/exams`);
-      return { data: response.data };
+      return { data: response.data || [] };
     } catch (error) {
       console.warn('API getCourseExams failed, using dummy data:', error);
       const courseExams = dummyExamsComprehensive.filter(exam => exam.course_id === courseId);
@@ -116,7 +117,7 @@ class ExamService {
   async getUpcomingExams(): Promise<{ data: Exam[] }> {
     try {
       const response = await ApiService.get('/student/exams/upcoming');
-      return { data: response.data };
+      return { data: response.data || [] };
     } catch (error) {
       console.warn('API getUpcomingExams failed, using dummy data:', error);
       const upcomingExams = dummyExamsComprehensive.filter(exam => 
@@ -130,7 +131,7 @@ class ExamService {
   async getStudentResults(): Promise<{ data: any[] }> {
     try {
       const response = await ApiService.get('/student/results');
-      return { data: response.data };
+      return { data: response.data || [] };
     } catch (error) {
       console.warn('API getStudentResults failed, using dummy data:', error);
       return { data: dummyStudentResults };
@@ -141,7 +142,7 @@ class ExamService {
   async getDoctorExams(): Promise<{ data: Exam[] }> {
     try {
       const response = await ApiService.get('/doctor/exams');
-      return { data: response.data };
+      return { data: response.data || [] };
     } catch (error) {
       console.warn('API getDoctorExams failed, using dummy data:', error);
       return { data: dummyExamsComprehensive };
@@ -152,7 +153,7 @@ class ExamService {
   async getExamQuestions(examId: string): Promise<{ data: any[] }> {
     try {
       const response = await ApiService.get(`/exams/${examId}/questions`);
-      return { data: response.data };
+      return { data: response.data || [] };
     } catch (error) {
       console.warn('API getExamQuestions failed, using dummy data:', error);
       const exam = dummyExamsComprehensive.find(e => e.id === examId);
@@ -200,7 +201,7 @@ class ExamService {
   async takeExam(examId: string): Promise<Exam> {
     try {
       const response = await ApiService.get(`/student/exams/${examId}/take`);
-      return response.data;
+      return response.data || dummyExamsComprehensive[0];
     } catch (error) {
       console.warn('API takeExam failed, using dummy data:', error);
       const exam = dummyExamsComprehensive.find(exam => exam.id === examId) || dummyExamsComprehensive[0];
@@ -229,7 +230,7 @@ class ExamService {
   async createExam(examData: CreateExamData): Promise<{ exam: Exam }> {
     try {
       const response = await ApiService.post('/doctor/exams', examData);
-      return { exam: response.data };
+      return { exam: response.data || dummyExamsComprehensive[0] };
     } catch (error) {
       console.warn('API createExam failed, using dummy response:', error);
       const newExam = {
@@ -247,7 +248,7 @@ class ExamService {
   async updateExam(examId: string, examData: UpdateExamData): Promise<{ exam: Exam }> {
     try {
       const response = await ApiService.put(`/doctor/exams/${examId}`, examData);
-      return { exam: response.data };
+      return { exam: response.data || dummyExamsComprehensive[0] };
     } catch (error) {
       console.warn('API updateExam failed, using dummy response:', error);
       const existingExam = dummyExamsComprehensive.find(e => e.id === examId) || dummyExamsComprehensive[0];

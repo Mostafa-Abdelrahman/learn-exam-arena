@@ -48,7 +48,7 @@ class CourseService {
       const user = await AuthService.getCurrentUser();
       const endpoint = user?.role === 'admin' ? '/admin/courses' : '/courses';
       const response = await ApiService.get(endpoint);
-      return { data: response.data };
+      return { data: response.data || [] };
     } catch (error) {
       console.warn('API getAllCourses failed, using dummy data:', error);
       return { data: dummyCourses };
@@ -119,7 +119,7 @@ class CourseService {
   async getStudentCourses(): Promise<{ data: any[] }> {
     try {
       const response = await ApiService.get('/student/courses');
-      return { data: response.data };
+      return { data: response.data || [] };
     } catch (error) {
       console.warn('API getStudentCourses failed, using dummy data:', error);
       return { data: [] };
@@ -140,7 +140,7 @@ class CourseService {
   async getDoctorCourses(): Promise<{ data: Course[] }> {
     try {
       const response = await ApiService.get('/doctor/courses');
-      return { data: response.data };
+      return { data: response.data || [] };
     } catch (error) {
       console.warn('API getDoctorCourses failed, using dummy data:', error);
       return { data: dummyCourses };

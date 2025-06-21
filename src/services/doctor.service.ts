@@ -76,7 +76,7 @@ class DoctorService {
   async getExams(doctorId: string): Promise<{ data: Exam[] }> {
     try {
       const response = await ApiService.get(`/doctor/${doctorId}/exams`);
-      return { data: response.data };
+      return { data: response.data || [] };
     } catch (error) {
       console.warn('API getExams failed, using dummy data:', error);
       return { data: [] };
@@ -86,7 +86,7 @@ class DoctorService {
   async getCourses(doctorId: string): Promise<{ data: Course[] }> {
     try {
       const response = await ApiService.get(`/doctor/${doctorId}/courses`);
-      return { data: response.data };
+      return { data: response.data || [] };
     } catch (error) {
       console.warn('API getCourses failed, using dummy data:', error);
       return { data: [] };
@@ -96,7 +96,7 @@ class DoctorService {
   async getStudents(doctorId: string): Promise<{ data: User[] }> {
     try {
       const response = await ApiService.get(`/doctor/${doctorId}/students`);
-      return { data: response.data };
+      return { data: response.data || [] };
     } catch (error) {
       console.warn('API getStudents failed, using dummy data:', error);
       return { data: [] };
@@ -106,7 +106,7 @@ class DoctorService {
   async getQuestions(doctorId: string): Promise<{ data: Question[] }> {
     try {
       const response = await ApiService.get(`/doctor/${doctorId}/questions`);
-      return { data: response.data };
+      return { data: response.data || [] };
     } catch (error) {
       console.warn('API getQuestions failed, using dummy data:', error);
       return { data: dummyQuestions };
@@ -116,7 +116,7 @@ class DoctorService {
   async getQuestionChoices(questionId: string): Promise<{ data: Choice[] }> {
     try {
       const response = await ApiService.get(`/doctor/questions/${questionId}/choices`);
-      return { data: response.data };
+      return { data: response.data || [] };
     } catch (error) {
       console.warn('API getQuestionChoices failed, using dummy data:', error);
       return { data: dummyChoices.filter(c => c.question_id === questionId) };

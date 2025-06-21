@@ -7,7 +7,7 @@ class NotificationService {
   async getUserNotifications(params?: any): Promise<{ data: any[] }> {
     try {
       const response = await ApiService.get('/notifications', params);
-      return { data: response.data };
+      return { data: response.data || [] };
     } catch (error) {
       console.warn('API getUserNotifications failed, using dummy data:', error);
       const limit = params?.limit || dummyNotifications.length;
