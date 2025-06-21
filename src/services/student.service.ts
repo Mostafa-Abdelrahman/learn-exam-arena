@@ -1,3 +1,4 @@
+
 import ApiService from './api.service';
 import { dummyGrades } from '@/data/dummy-grades';
 import { dummyStudentCourses } from '@/data/dummy-student-courses';
@@ -6,7 +7,8 @@ class StudentService {
   // Get student grades
   async getStudentGrades(studentId: string): Promise<{ data: any[] }> {
     try {
-      return await ApiService.get(`/student/${studentId}/grades`);
+      const response = await ApiService.get(`/student/${studentId}/grades`);
+      return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
       console.warn('API getStudentGrades failed, using dummy data:', error);
       return { data: dummyGrades };
@@ -16,7 +18,18 @@ class StudentService {
   // Get student profile
   async getStudentProfile(studentId: string): Promise<any> {
     try {
-      return await ApiService.get(`/student/${studentId}/profile`);
+      const response = await ApiService.get(`/student/${studentId}/profile`);
+      return response.data || {
+        id: studentId,
+        name: "John Smith",
+        email: "john.smith@university.edu",
+        role: "student",
+        profile: {
+          bio: "Computer Science student passionate about AI and machine learning",
+          phone: "+1234567890",
+          address: "123 University Ave, Campus City"
+        }
+      };
     } catch (error) {
       console.warn('API getStudentProfile failed, using dummy data:', error);
       return {
@@ -36,7 +49,15 @@ class StudentService {
   // Update student profile
   async updateStudentProfile(studentId: string, profileData: any): Promise<{ message: string; student: any }> {
     try {
-      return await ApiService.put(`/student/${studentId}/profile`, profileData);
+      const response = await ApiService.put(`/student/${studentId}/profile`, profileData);
+      return {
+        message: response.message || 'Profile updated successfully',
+        student: response.data?.student || {
+          id: studentId,
+          ...profileData,
+          updated_at: new Date().toISOString()
+        }
+      };
     } catch (error) {
       console.warn('API updateStudentProfile failed, using dummy response:', error);
       return {
@@ -53,7 +74,8 @@ class StudentService {
   // Get student courses
   async getStudentCourses(): Promise<{ data: StudentCourse[] }> {
     try {
-      return await ApiService.get('/student/courses');
+      const response = await ApiService.get('/student/courses');
+      return { data: Array.isArray(response.data) ? response.data : [] };
     } catch (error) {
       console.warn('API getStudentCourses failed, using dummy data:', error);
       return { data: dummyStudentCourses };
@@ -65,7 +87,8 @@ class StudentService {
     try {
       // Remove any prefix from the course ID
       const cleanCourseId = courseId.replace(/^course-/, '');
-      return await ApiService.post(`/student/courses/${cleanCourseId}/enroll`);
+      const response = await ApiService.post(`/student/courses/${cleanCourseId}/enroll`);
+      return { message: response.message || 'Successfully enrolled in course' };
     } catch (error) {
       console.warn('API enrollInCourse failed, using dummy response:', error);
       return { message: 'Successfully enrolled in course' };

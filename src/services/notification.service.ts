@@ -20,7 +20,7 @@ class NotificationService {
     try {
       const response = await ApiService.get('/notifications/unread-count');
       const data = response.data || {};
-      return { count: data.count || 0 };
+      return { count: (data as any).count || 0 };
     } catch (error) {
       console.warn('API getUnreadCount failed, using dummy data:', error);
       return dummyUnreadCount;

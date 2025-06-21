@@ -58,7 +58,7 @@ class CourseService {
   async getCourseById(courseId: string): Promise<{ data: Course }> {
     try {
       const response = await ApiService.get(`/admin/courses/${courseId}`);
-      return { data: response.data || dummyCourses[0] };
+      return { data: response.data || this.createDefaultCourse({ name: 'Default Course', code: 'DEFAULT', credits: 3, semester: '1', major_id: '', status: 'active', academic_year: '2024' }) };
     } catch (error) {
       console.warn('API getCourseById failed, using dummy data:', error);
       const course = dummyCourses.find(c => c.id === courseId) || dummyCourses[0];
@@ -84,7 +84,7 @@ class CourseService {
     try {
       const response = await ApiService.put(`/admin/courses/${courseId}`, courseData);
       return { 
-        data: response.data || this.createDefaultCourse(courseData as CreateCourseData),
+        data: response.data || this.createDefaultCourse({ ...courseData, name: courseData.name || '', code: courseData.code || '', credits: courseData.credits || 3, semester: courseData.semester || '1', major_id: courseData.major_id || '', status: courseData.status || 'active', academic_year: courseData.academic_year || '2024' }),
         message: response.message || 'Course updated successfully' 
       };
     } catch (error) {
@@ -141,7 +141,7 @@ class CourseService {
     }
   }
 
-  private createDefaultCourse(courseData: Partial<CreateCourseData>): Course {
+  private createDefaultCourse(courseData: CreateCourseData): Course {
     return {
       id: `course-${Date.now()}`,
       name: courseData.name || '',

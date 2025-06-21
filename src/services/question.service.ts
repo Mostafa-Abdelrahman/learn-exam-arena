@@ -159,8 +159,8 @@ class QuestionService {
       const response = await ApiService.upload('/doctor/questions/import', file, additionalData);
       const data = response.data || {};
       return { 
-        imported: data.imported || 0, 
-        errors: data.errors || [] 
+        imported: (data as any).imported || 0, 
+        errors: (data as any).errors || [] 
       };
     } catch (error) {
       console.warn('API importQuestions failed:', error);
@@ -197,8 +197,8 @@ class QuestionService {
       const response = await ApiService.post('/doctor/questions/bulk/delete', { question_ids: questionIds });
       const data = response.data || {};
       return { 
-        deleted: data.deleted || 0, 
-        errors: data.errors || [] 
+        deleted: (data as any).deleted || 0, 
+        errors: (data as any).errors || [] 
       };
     } catch (error) {
       console.warn('API bulkDeleteQuestions failed:', error);
@@ -211,8 +211,8 @@ class QuestionService {
       const response = await ApiService.put('/doctor/questions/bulk', { question_ids: questionIds, updates });
       const data = response.data || {};
       return { 
-        updated: data.updated || 0, 
-        errors: data.errors || [] 
+        updated: (data as any).updated || 0, 
+        errors: (data as any).errors || [] 
       };
     } catch (error) {
       console.warn('API bulkUpdateQuestions failed:', error);
@@ -247,8 +247,8 @@ class QuestionService {
       const response = await ApiService.post('/doctor/questions/validate', questionData);
       const data = response.data || {};
       return { 
-        valid: data.valid || false, 
-        errors: data.errors || [] 
+        valid: (data as any).valid || false, 
+        errors: (data as any).errors || [] 
       };
     } catch (error) {
       console.warn('API validateQuestion failed:', error);

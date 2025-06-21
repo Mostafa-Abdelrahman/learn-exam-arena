@@ -154,9 +154,9 @@ class ExamService {
       const data = response.data || {};
       return {
         message: response.message || 'Exam started successfully',
-        session_id: data.session_id || `session-${Date.now()}`,
-        student_exam_id: data.student_exam_id,
-        questions: data.questions
+        session_id: (data as any).session_id || `session-${Date.now()}`,
+        student_exam_id: (data as any).student_exam_id,
+        questions: (data as any).questions
       };
     } catch (error) {
       console.warn('API startExam failed, using dummy response:', error);
@@ -203,7 +203,7 @@ class ExamService {
       const data = response.data || {};
       return {
         message: response.message || 'Exam submitted successfully',
-        score: data.score
+        score: (data as any).score
       };
     } catch (error) {
       console.warn('API submitExam failed, using dummy response:', error);
